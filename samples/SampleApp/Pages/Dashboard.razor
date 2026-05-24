@@ -1,0 +1,6 @@
+@* @nxt:revalidate=30 *@
+
+<h1>Dashboard (ISR, revalidate every 30s)</h1>
+<p>Rendered at: @System.DateTime.UtcNow.ToString("O")</p>
+<p>Refresh after 30 seconds to see the timestamp change — the page is regenerated
+   off the request path by <code>IsrRevalidationWorker</code>.</p>

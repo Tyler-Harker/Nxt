@@ -1,0 +1,82 @@
+<Project>
+
+  <!--
+    The Microsoft.NET.Sdk.Web SDK already promotes Pages/**/*.razor and Pages/**/*.cshtml
+    to <AdditionalFiles> for the built-in RazorSourceGenerator. Our generator reads the same
+    AdditionalTexts, so we MUST NOT re-add them — doing so produces:
+       error CS8785: Generator 'RazorSourceGenerator' failed to generate source.
+       The hintName 'Pages/Index_razor.g.cs' of the added source file must be unique.
+
+    Api/**/*.cs and Middleware/**/*.cs are read by our generator via the compilation's
+    syntax trees (SyntaxProvider), not via AdditionalFiles, so we don't add those either.
+  -->
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+  </ItemGroup>
+
+  <!--
+    ===========================================================================
+    Layout @inherits auto-injection.
+
+    Pages/**/_layout.razor needs `@inherits LayoutComponentBase` to have access to the
+    @Body parameter. Asking users to remember that line every time is friction.
+
+    Strategy: the first time we see a _layout.razor without any @inherits directive, we
+    prepend the line to the source file. The change is idempotent (subsequent builds
+    detect the line is already there and skip), so on the user's side a fresh
+    _layout.razor "just works" — they write @Body, the build adds the boilerplate, and
+    nothing changes after that. Users who want their own base class can write
+    @inherits SomeOtherBase up-front and the injection becomes a noop.
+
+    We considered transforming to an obj/ copy and redirecting items, but the SDK adds
+    rich metadata to RazorComponentWithTargetPath that's painful to reproduce. In-place
+    is simpler and stays correct across hot reload + dotnet watch cycles.
+    ===========================================================================
+  -->
+
+  <UsingTask TaskName="NxtEnsureLayoutInherits"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourceFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          var content = File.ReadAllText(SourceFile);
+          foreach (var rawLine in content.Split('\n'))
+          {
+              var line = rawLine.Trim();
+              if (line.Length == 0) continue;
+              if (line.StartsWith("@*")) continue;          // Razor comment
+              if (line.StartsWith("<!--")) continue;        // HTML comment
+              if (line.StartsWith("@inherits")) return true; // already has one — done
+              break;
+          }
+          var newContent = "@inherits global::Microsoft.AspNetCore.Components.LayoutComponentBase"
+                           + Environment.NewLine + content;
+          File.WriteAllText(SourceFile, newContent);
+          Log.LogMessage(MessageImportance.Normal,
+              "[Nxt] Injected @inherits LayoutComponentBase into " + SourceFile);
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="NxtEnsureLayoutInheritsTarget"
+          BeforeTargets="PrepareForRazorComponentGenerate">
+
+    <ItemGroup>
+      <_NxtLayoutSrc Include="$(MSBuildProjectDirectory)/Pages/**/_layout.razor" />
+    </ItemGroup>
+
+    <NxtEnsureLayoutInherits
+        SourceFile="%(_NxtLayoutSrc.FullPath)"
+        Condition="'@(_NxtLayoutSrc)' != ''" />
+  </Target>
+
+</Project>

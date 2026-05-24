@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Dev wrapper: runs the in-repo Nxt CLI source against any args.
+# Use this instead of `nxt` so you always exercise the latest CLI code
+# without packing or installing a global tool.
+#
+#   ./nxt dev --project samples/SampleApp --port 5099
+#   ./nxt build --project samples/SampleApp
+#   ./nxt new my-app
+#
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec dotnet run \
+    --project "$REPO_ROOT/src/Nxt.Cli/Nxt.Cli.csproj" \
+    --no-launch-profile \
+    -- "$@"

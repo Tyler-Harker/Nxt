@@ -1,0 +1,9 @@
+@* @nxt:interactive-server *@
+
+<h1>Counter</h1>
+<p>Marked <code>@@nxt:interactive-server</code> — initial SSR, then Blazor Server takes over.</p>
+<button @onclick="() => count++">Clicked @count times</button>
+
+@code {
+    int count = 0;
+}

@@ -1,0 +1,11 @@
+@inherits global::Microsoft.AspNetCore.Components.LayoutComponentBase
+<nav style="background:#222;color:#fff;padding:1rem">
+    <a href="/" style="color:#fff;margin-right:1rem">Home</a>
+    <a href="/about" style="color:#fff;margin-right:1rem">About (Razor, SSG)</a>
+    <a href="/blog/hello-world" style="color:#fff;margin-right:1rem">Blog post (dynamic route)</a>
+    <a href="/dashboard" style="color:#fff;margin-right:1rem">Dashboard (ISR 30s)</a>
+    <a href="/counter" style="color:#fff">Counter (interactive)</a>
+</nav>
+<main style="padding:2rem;font-family:system-ui">
+    @Body
+</main>

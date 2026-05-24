@@ -1,0 +1,12 @@
+@inject IGreeting Greeting
+
+<h1>Welcome to Nxt</h1>
+<p>@Greeting.Hello("world")</p>
+
+<ul>
+    <li>This page is a Blazor (.razor) SSR components, wrapped in <code>MainLayout</code>.</li>
+    <li><code>IGreeting</code> was injected via DI.</li>
+</ul>
+
+<h2>API demo</h2>
+<p>Hit <a href="/api/hello">/api/hello</a> — JSON from <code>Api/HelloEndpoint.cs</code>.</p>

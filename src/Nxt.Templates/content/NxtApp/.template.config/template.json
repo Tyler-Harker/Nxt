@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Nxt",
+  "classifications": ["Web", "Nxt"],
+  "identity": "Nxt.App",
+  "name": "Nxt App",
+  "shortName": "nxt",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "NxtApp",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        { "choice": "net10.0", "description": "Target net10.0" }
+      ],
+      "defaultValue": "net10.0",
+      "replaces": "net10.0"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Nxt</RootNamespace>
+    <PackageId>Nxt.Runtime</PackageId>
+    <Description>The runtime for Nxt — a Next.js-style web framework for .NET supporting file-based routing, SSR, SSG, ISR, and both Blazor and Razor components.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ship the source generator and MSBuild targets with the runtime package -->
+    <None Include="build\Nxt.Runtime.targets" Pack="true" PackagePath="build\Nxt.Runtime.targets" />
+    <None Include="..\Nxt.Generators\bin\$(Configuration)\netstandard2.0\Nxt.Generators.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" Condition="Exists('..\Nxt.Generators\bin\$(Configuration)\netstandard2.0\Nxt.Generators.dll')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nxt.Generators\Nxt.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

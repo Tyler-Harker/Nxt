@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <TargetFrameworkDefault>net10.0</TargetFrameworkDefault>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Authors>Nxt</Authors>
+    <Product>Nxt</Product>
+    <Version>0.1.0</Version>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/nxt/nxt</RepositoryUrl>
+  </PropertyGroup>
+</Project>

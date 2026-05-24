@@ -1,0 +1,7 @@
+<h1>Blog post: @Slug</h1>
+<p>This page lives at <code>Pages/Blog/[slug].razor</code> and matches <code>/blog/{slug}</code>.</p>
+<p>Try changing the URL to anything after <code>/blog/</code>.</p>
+
+@code {
+    [Microsoft.AspNetCore.Components.Parameter] public string Slug { get; set; } = "";
+}

@@ -1,0 +1,34 @@
+@*
+    The Nxt Blazor root component.
+
+    MapRazorComponents<Root>() renders this for every page request. Pages discovered by the
+    source generator are decorated with [Route("...")] (and, if interactive, with a
+    [RenderModeXxx] attribute), so Blazor's Router finds them via reflection in the user's
+    assembly. The Router renders the matched page using its declared render mode.
+
+    For server-interactive pages, Blazor wraps the rendered HTML in <!--Blazor:server,...-->
+    markers and the embedded blazor.web.js boots a SignalR connection to /_blazor, which
+    AddInteractiveServerRenderMode() maps for us.
+*@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>Nxt</title>
+    <HeadOutlet />
+</head>
+<body>
+    <Router AppAssembly="typeof(Nxt.Components.Root).Assembly" AdditionalAssemblies="Nxt.NxtStartupBridge.UserAssemblies">
+        <Found Context="routeData">
+            <RouteView RouteData="routeData" DefaultLayout="null" />
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <h1 style="font-family:system-ui;padding:2rem">404 — Not found</h1>
+        </NotFound>
+    </Router>
+    <script src="_framework/blazor.web.js"></script>
+</body>
+</html>
