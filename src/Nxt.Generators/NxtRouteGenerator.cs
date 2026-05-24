@@ -457,7 +457,11 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
         if (parts.Length < 2) return (null, null);
         var className = SanitizeId(parts[parts.Length - 1]);
         var nsParts = parts.Take(parts.Length - 1).Select(SanitizeId);
-        return ($"{rootNs}.{string.Join(".", nsParts)}", className);
+        // Sanitize each dot-segment of rootNs too — the Razor SDK does this when computing
+        // a default namespace from the project name, so we must match (e.g. project "my-app"
+        // → namespace "my_app", not "my-app").
+        var rootNsSanitized = string.Join(".", rootNs.Split('.').Select(SanitizeId));
+        return ($"{rootNsSanitized}.{string.Join(".", nsParts)}", className);
     }
 
     private static string SanitizeId(string s)

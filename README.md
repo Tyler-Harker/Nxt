@@ -4,12 +4,57 @@ A Next.js-style web framework for .NET. File-based routing, SSR / SSG / ISR, bot
 
 ## Getting started
 
+Nxt isn't on NuGet.org yet, so you install everything from a local pack of the source. One-time setup:
+
 ```bash
-dotnet tool install -g Nxt.Cli
+git clone https://github.com/Tyler-Harker/Nxt.git
+cd Nxt
+
+# Pack everything the CLI + a generated app will need.
+# (Nxt.Generators is bundled into Nxt.Runtime as an analyzer — no separate pack.)
+dotnet pack src/Nxt.Runtime   -c Release -o ./nupkg
+dotnet pack src/Nxt.Cli       -c Release -o ./nupkg
+dotnet pack src/Nxt.Templates -c Release -o ./nupkg
+
+# Add the nupkg folder as a persistent NuGet source — so apps created by
+# `nxt new` can find Nxt.Runtime when they restore.
+dotnet nuget add source "$(pwd)/nupkg" --name nxt-local
+
+# Install the CLI globally and the project template into `dotnet new`.
+dotnet tool install -g --add-source ./nupkg Nxt.Cli
+dotnet new install ./nupkg/Nxt.Templates.0.1.0.nupkg
+```
+
+If `nxt` isn't on PATH after install, add the dotnet tool directory:
+
+```bash
+echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.bashrc   # or ~/.zshrc
+source ~/.bashrc
+```
+
+Then anywhere on your machine:
+
+```bash
 nxt new my-app
 cd my-app
-nxt dev
+nxt dev          # http://localhost:5000 (or pass --port 8080)
 ```
+
+To update later: `git pull`, re-run the three `dotnet pack` commands, then
+`dotnet tool update -g --add-source ./nupkg Nxt.Cli` and
+`dotnet new install ./nupkg/Nxt.Templates.0.1.0.nupkg --force`.
+
+### Or, just play with the sample in-repo
+
+If you only want to poke at the framework without installing anything globally:
+
+```bash
+git clone https://github.com/Tyler-Harker/Nxt.git
+cd Nxt
+./dev-sample          # http://localhost:8080
+```
+
+`./dev-sample` runs the babysitter (debounced rebuilds + browser auto-refresh + crash recovery) against `samples/SampleApp`. No `nxt` command needed — handy when you're hacking on the framework itself.
 
 ## How an Nxt project is laid out
 

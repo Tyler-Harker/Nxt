@@ -12,20 +12,24 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Ship the source generator and MSBuild targets with the runtime package -->
-    <None Include="build\Nxt.Runtime.targets" Pack="true" PackagePath="build\Nxt.Runtime.targets" />
-    <None Include="..\Nxt.Generators\bin\$(Configuration)\netstandard2.0\Nxt.Generators.dll"
-          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" Condition="Exists('..\Nxt.Generators\bin\$(Configuration)\netstandard2.0\Nxt.Generators.dll')" />
-  </ItemGroup>
-
+  <!-- Build the generator first so its DLL exists when we go to pack. -->
   <ItemGroup>
     <ProjectReference Include="..\Nxt.Generators\Nxt.Generators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Ship the source generator + MSBuild targets in the package. -->
+  <ItemGroup>
+    <None Include="build\Nxt.Runtime.targets"
+          Pack="true"
+          PackagePath="build\Nxt.Runtime.targets" />
+    <None Include="..\Nxt.Generators\bin\$(Configuration)\netstandard2.0\Nxt.Generators.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs/Nxt.Generators.dll"
+          Visible="false" />
   </ItemGroup>
 
 </Project>

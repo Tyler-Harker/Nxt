@@ -27,10 +27,11 @@ public static class NxtServiceCollectionExtensions
         // Pull in MVC's Razor view engine so .cshtml pages can render.
         services.AddControllersWithViews();
 
-        // Blazor static rendering — required for .razor pages.
+        // Blazor static rendering — required for .razor pages. Interactive Server is built-in;
+        // interactive WebAssembly requires the consumer to add Microsoft.AspNetCore.Components.WebAssembly.Server
+        // themselves and call AddInteractiveWebAssemblyComponents() (v2 feature for us).
         var razor = services.AddRazorComponents();
         razor.AddInteractiveServerComponents();
-        razor.AddInteractiveWebAssemblyComponents();
 
         services.AddScoped<HtmlRenderer>(sp => new HtmlRenderer(sp, sp.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>()));
 

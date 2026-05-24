@@ -60,10 +60,9 @@ public static class NxtHost
         // Blazor pipeline — handles every .razor page discovered by the generator. The
         // generator emits [Route] + (optional) [RenderModeInteractiveServer] attributes on
         // each page partial; MapRazorComponents<Root> finds them via reflection and renders
-        // them with proper interactivity (SignalR for server mode, WASM hydration for wasm).
+        // them with proper interactivity (SignalR for server mode).
         var builder = app.MapRazorComponents<Components.Root>()
-            .AddInteractiveServerRenderMode()
-            .AddInteractiveWebAssemblyRenderMode();
+            .AddInteractiveServerRenderMode();
         foreach (var asm in NxtStartupBridge.UserAssemblies)
             builder.AddAdditionalAssemblies(asm);
 

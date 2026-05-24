@@ -16,14 +16,16 @@ internal static class NewCommand
         {
             Console.WriteLine($"Creating Nxt app '{name}'...");
 
-            // Best-effort install of the template; ignore failures so re-runs work.
-            await ProcessRunner.RunAsync("dotnet", new[] { "new", "install", "Nxt.Templates" });
-
             var exit = await ProcessRunner.RunAsync("dotnet", new[] { "new", "nxt", "-n", name });
             if (exit != 0)
             {
+                Console.Error.WriteLine();
                 Console.Error.WriteLine($"Template instantiation failed with exit code {exit}.");
-                Console.Error.WriteLine("Ensure the Nxt.Templates package is installed: dotnet new install Nxt.Templates");
+                Console.Error.WriteLine("Is the Nxt.Templates template installed?");
+                Console.Error.WriteLine("  dotnet new list nxt    # check");
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("If missing, install it from a local pack of the repo:");
+                Console.Error.WriteLine("  dotnet new install <repo>/nupkg/Nxt.Templates.<version>.nupkg");
                 Environment.Exit(exit);
             }
 

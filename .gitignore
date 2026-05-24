@@ -80,3 +80,6 @@ Thumbs.db
 
 # CLI tool pack output (declared via PackageOutputPath in Nxt.Cli.csproj)
 src/Nxt.Cli/nupkg/
+
+# README's install flow packs into ./nupkg at the repo root
+/nupkg/
