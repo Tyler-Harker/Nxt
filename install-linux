@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# One-shot Nxt installer for Linux.
+#
+# Packs the three NuGet packages (Runtime, CLI, project template), registers the local
+# nupkg directory as a NuGet source so `nxt new` apps can restore Nxt.Runtime, installs
+# the CLI globally, and installs the project template into `dotnet new`.
+#
+# Run from the repo root:
+#     ./install-linux
+#
+# Idempotent: re-running just reinstalls the latest source.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+if ! command -v dotnet >/dev/null 2>&1; then
+    echo "✗ dotnet SDK not found on PATH." >&2
+    echo "  Install .NET 10 SDK from https://dotnet.microsoft.com/download" >&2
+    exit 1
+fi
+
+NUPKG_DIR="$ROOT/nupkg"
+mkdir -p "$NUPKG_DIR"
+
+echo "→ Packing Nxt.Runtime, Nxt.Cli, Nxt.Templates…"
+dotnet pack src/Nxt.Runtime   -c Release -o "$NUPKG_DIR" --nologo -v quiet
+dotnet pack src/Nxt.Cli       -c Release -o "$NUPKG_DIR" --nologo -v quiet
+dotnet pack src/Nxt.Templates -c Release -o "$NUPKG_DIR" --nologo -v quiet
+
+echo "→ Registering local NuGet source 'nxt-local'…"
+dotnet nuget remove source nxt-local >/dev/null 2>&1 || true
+dotnet nuget add source "$NUPKG_DIR" --name nxt-local >/dev/null
+
+echo "→ Clearing NuGet caches (so same-version re-pack is picked up)…"
+dotnet nuget locals all --clear >/dev/null
+
+echo "→ Installing the 'nxt' global tool…"
+dotnet tool uninstall -g Nxt.Cli >/dev/null 2>&1 || true
+dotnet tool install -g --add-source "$NUPKG_DIR" Nxt.Cli >/dev/null
+
+echo "→ Installing the project template…"
+dotnet new uninstall Nxt.Templates >/dev/null 2>&1 || true
+TEMPLATE_PKG="$(ls "$NUPKG_DIR"/Nxt.Templates.*.nupkg | head -1)"
+dotnet new install "$TEMPLATE_PKG" >/dev/null
+
+# PATH hint — ~/.dotnet/tools is where dotnet drops global tools but isn't always on PATH.
+TOOLS_DIR="$HOME/.dotnet/tools"
+if ! command -v nxt >/dev/null 2>&1; then
+    case "$SHELL" in
+        */zsh)  RC="$HOME/.zshrc" ;;
+        */bash) RC="$HOME/.bashrc" ;;
+        *)      RC="" ;;
+    esac
+    if [ -n "$RC" ] && ! grep -qs '\.dotnet/tools' "$RC"; then
+        echo "→ Adding $TOOLS_DIR to PATH in $RC"
+        echo '' >> "$RC"
+        echo '# Added by Nxt installer' >> "$RC"
+        echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> "$RC"
+        echo "  Restart your shell (or run: source $RC)"
+    else
+        echo "  ! 'nxt' isn't on PATH yet. Add this to your shell rc:"
+        echo "      export PATH=\"\$PATH:$TOOLS_DIR\""
+    fi
+fi
+
+echo
+echo "✓ Installed. Try:"
+echo "    nxt new my-app && cd my-app && nxt dev"

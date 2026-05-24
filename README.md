@@ -4,33 +4,26 @@ A Next.js-style web framework for .NET. File-based routing, SSR / SSG / ISR, bot
 
 ## Getting started
 
-Nxt isn't on NuGet.org yet, so you install everything from a local pack of the source. One-time setup:
+Nxt isn't on NuGet.org yet — install via the bootstrap script for your platform:
 
 ```bash
 git clone https://github.com/Tyler-Harker/Nxt.git
 cd Nxt
 
-# Pack everything the CLI + a generated app will need.
-# (Nxt.Generators is bundled into Nxt.Runtime as an analyzer — no separate pack.)
-dotnet pack src/Nxt.Runtime   -c Release -o ./nupkg
-dotnet pack src/Nxt.Cli       -c Release -o ./nupkg
-dotnet pack src/Nxt.Templates -c Release -o ./nupkg
+# Linux:
+./install-linux
 
-# Add the nupkg folder as a persistent NuGet source — so apps created by
-# `nxt new` can find Nxt.Runtime when they restore.
-dotnet nuget add source "$(pwd)/nupkg" --name nxt-local
+# macOS:
+./install-macos
 
-# Install the CLI globally and the project template into `dotnet new`.
-dotnet tool install -g --add-source ./nupkg Nxt.Cli
-dotnet new install ./nupkg/Nxt.Templates.0.1.0.nupkg
+# Windows (PowerShell):
+.\install-windows.ps1
 ```
 
-If `nxt` isn't on PATH after install, add the dotnet tool directory:
-
-```bash
-echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.bashrc   # or ~/.zshrc
-source ~/.bashrc
-```
+The script packs Runtime + CLI + project template, registers the `nupkg/` folder as a
+persistent NuGet source (so apps created by `nxt new` can restore `Nxt.Runtime`),
+installs the global tool, installs the template, and adds `~/.dotnet/tools` to your PATH
+if `nxt` isn't reachable.
 
 Then anywhere on your machine:
 
@@ -40,9 +33,14 @@ cd my-app
 nxt dev          # http://localhost:5000 (or pass --port 8080)
 ```
 
-To update later: `git pull`, re-run the three `dotnet pack` commands, then
-`dotnet tool update -g --add-source ./nupkg Nxt.Cli` and
-`dotnet new install ./nupkg/Nxt.Templates.0.1.0.nupkg --force`.
+To update later, just run:
+
+```bash
+nxt update
+```
+
+This downloads the latest source from GitHub, re-packs everything, clears the NuGet
+cache, and reinstalls. Options: `--repo <url>` or `--branch <name>` for forks.
 
 ### Or, just play with the sample in-repo
 
