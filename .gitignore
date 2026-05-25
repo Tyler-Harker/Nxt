@@ -7,6 +7,9 @@
 [Ll]og/
 [Ll]ogs/
 
+# bench/run.sh output — multi-GB dotnet stdout + per-tool dumps
+bench/.results/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
