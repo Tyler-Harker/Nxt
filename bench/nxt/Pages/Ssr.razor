@@ -1,0 +1,10 @@
+@using Nxt.Bench.Data
+@inject ItemStore Store
+
+<h1>SSR page — @Store.All.Count items</h1>
+<ul>
+    @foreach (var item in Store.All)
+    {
+        <li>#@item.Id — @item.Name — $@item.Price</li>
+    }
+</ul>

@@ -1,0 +1,12 @@
+export default function Home() {
+    return (
+        <div>
+            <h1>Next.js bench</h1>
+            <ul>
+                <li><a href="/static">/static — prerendered at build</a></li>
+                <li><a href="/ssr">/ssr — SSR, 100 items</a></li>
+                <li><a href="/api/items">/api/items — JSON</a></li>
+            </ul>
+        </div>
+    );
+}
