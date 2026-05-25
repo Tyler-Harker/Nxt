@@ -32,20 +32,20 @@ MyApp/
 A minimal `Program.cs`:
 
 ```csharp
-using Nxt.Runtime;
+using Nxt;
 
 await NxtHost.RunAsync(args);
 ```
 
-For apps that need extra services or middleware, pass `NxtHostOptions`:
+For apps that need extra services or middleware, pass a callback that mutates `NxtHostOptions`. Each property takes a `WebApplicationBuilder` (services) or `WebApplication` (pipeline) — NOT an `IServiceCollection` directly:
 
 ```csharp
-await NxtHost.RunAsync(args, new NxtHostOptions
+await NxtHost.RunAsync(args, opts =>
 {
-    ConfigureServices       = services => services.AddDbContext<Db>(...),
-    ConfigureBeforeRouting  = app => app.UseAuthentication(),
-    ConfigureMiddleware     = app => app.UseAuthorization(),
-    ConfigureAfterEndpoints = app => app.MapIdentityApi<User>(),
+    opts.ConfigureServices       = b   => b.Services.AddDbContext<Db>(...);
+    opts.ConfigureBeforeRouting  = app => app.UseAuthentication();
+    opts.ConfigureMiddleware     = app => app.UseAuthorization();
+    opts.ConfigureAfterEndpoints = app => app.MapIdentityApi<User>();
 });
 ```
 
@@ -102,31 +102,68 @@ Every page in `Pages/dashboard/**` now requires auth — no need to repeat the a
 
 To chain layouts manually (skip a folder layer): `@attribute [Layout(typeof(OuterLayout))]`.
 
-## API endpoints — co-located in `api/` folders
+## Code-behind: split markup and logic into `.razor` + `.razor.cs`
 
-Any class in any folder named `api` (anywhere, not just `Pages/api/`) gets scanned for HTTP-verb methods. Methods named `Get`, `Post`, `Put`, `Patch`, `Delete` (case-insensitive) become endpoints. The route is derived from the folder path:
+**Prefer this structure for any page or component with more than ~5 lines of logic.** Keep `.razor` files pure markup; put DI, state, and lifecycle in a sibling `.razor.cs`. The Razor SDK compiles each `.razor` into a `partial class`, and the Nxt generator emits its own partial with the `[Route]` attribute. Adding a third partial in `.razor.cs` merges cleanly:
+
+```razor
+@* Pages/Profile.razor — markup only, no @code block *@
+<h1>@Name</h1>
+<button @onclick="Refresh">Reload</button>
+```
 
 ```csharp
-// Pages/dashboard/api/Profile.cs  →  endpoints under /dashboard/api/profile
+// Pages/Profile.razor.cs — logic, DI, lifecycle
+using Microsoft.AspNetCore.Components;
+
+namespace MyApp.Pages;
+
+public partial class Profile : ComponentBase
+{
+    [Inject] public IUserService Users { get; set; } = default!;
+
+    private string Name { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+        => Name = await Users.GetNameAsync();
+
+    private async Task Refresh()
+        => Name = await Users.GetNameAsync();
+}
+```
+
+Three rules for the partials to merge cleanly:
+
+1. **Namespace must match** the generator's — for `Pages/X/Y.razor` it's `<RootNamespace>.Pages.X`. (Check `obj/GeneratedFiles/.../NxtPage.*.g.cs` if unsure.)
+2. **Class name must match the filename**, case-sensitive — `Profile.razor` ↔ `class Profile`.
+3. **Exactly one partial declares `: ComponentBase`.** The Nxt generator deliberately doesn't, so your `.razor.cs` is the natural place. If `_Imports.razor` has `@inherits ComponentBase`, you can skip it there too.
+
+`@inject IService Foo` in markup still works alongside `[Inject]` in the code-behind — pick one style per project. `[Inject]` is the convention when you've already crossed into a `.razor.cs`.
+
+## API endpoints — co-located in `api/` folders
+
+Any class in any folder named `api` (anywhere, not just `Pages/api/`) gets scanned for HTTP-verb methods. **Method names must be UPPERCASE HTTP verbs: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`** — the runtime looks them up by exact name. The route is derived from the folder path + the class name (lowercased, with `Endpoint` suffix stripped if present):
+
+```csharp
+// Pages/dashboard/api/Profile.cs  →  /dashboard/api/profile
 namespace MyApp.Pages.Dashboard.Api;
 
-public class Profile
+public class Profile(Db db)
 {
-    public static async Task<Results<Ok<User>, NotFound>> Get(
-        ClaimsPrincipal user, Db db)
+    public async Task<Results<Ok<User>, NotFound>> GET(ClaimsPrincipal user)
     {
         var u = await db.Users.FindAsync(user.GetUserId());
         return u is null ? TypedResults.NotFound() : TypedResults.Ok(u);
     }
 
-    public static async Task<IResult> Post(UpdateProfile body, Db db)
+    public async Task<IResult> POST(UpdateProfile body)
         => TypedResults.Ok(await db.UpdateProfileAsync(body));
 }
 ```
 
-These are vanilla minimal-API handlers — full DI in parameters, return `Results<…>` or `IResult`, use `[FromRoute]` / `[FromQuery]` / `[FromBody]` if you need to override defaults.
+These are vanilla minimal-API handlers — full DI via primary-constructor or method parameters, return `Results<…>` or `IResult`, use `[FromRoute]` / `[FromQuery]` / `[FromBody]` if you need to override the default binding source.
 
-For sub-routes, name the method with the suffix: a method `GetById(int id)` on a class in `api/users/` maps to `GET /api/users/{id}` (the generator infers the route template from parameter names).
+Use `[ApiRoute("custom-name")]` on the class to override the URL segment when the class name doesn't read well.
 
 ## Middleware via `[Middleware(order:)]`
 
@@ -184,12 +221,14 @@ For `dark:` variants, add `@custom-variant dark (&:where(.dark, .dark *));` to `
 
 - **A docs/marketing site**: every page starts with `@nxt:static`; deploy with `nxt publish --static ./out`.
 - **An authenticated dashboard**: put `[Authorize]` on `Pages/dashboard/_layout.razor`; pages below inherit it.
-- **A REST API for an existing Razor app**: drop a `.cs` class with `Get`/`Post` methods into any folder named `api`; no manual `MapGet` calls needed.
+- **A REST API for an existing Razor app**: drop a `.cs` class with `GET`/`POST` methods into any folder named `api`; no manual `MapGet` calls needed.
 - **Custom middleware**: a class with `[Middleware(order: N)]` — no manual `app.UseMiddleware<…>()`.
 
 ## Things NOT to do
 
 - Don't put `@page` directives on files under `Pages/` — the generator emits them; manual ones collide.
 - Don't put non-page components under `Pages/`; use a separate `Components/` folder. Anything (except `_layout.razor`) the generator sees as a `.razor` under `Pages/` becomes a route.
+- Don't pile logic into `@code { }` blocks in `.razor` files when it's more than ~5 lines — split into a sibling `.razor.cs` partial class (see "Code-behind"). Markup and logic separated this way is far easier to read, diff, and refactor.
+- Don't name API methods `Get` / `Post` (PascalCase) — the runtime looks for `GET` / `POST` (uppercase) and won't find them. Building the app starts fine; the first request throws `API handler method '<Class>.GET' not found.`
 - Don't call `WebApplication.CreateBuilder(args)` or `MapRazorComponents<…>()` by hand — `NxtHost.RunAsync` does it. Customize via `NxtHostOptions`.
 - Don't repeat `[Authorize]` on every page in an authenticated section — put it on the section's `_layout.razor`.
