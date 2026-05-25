@@ -1,0 +1,57 @@
+<h1>Layouts</h1>
+
+<p>
+    Drop a <code>_layout.razor</code> file in any <code>Pages/</code> subfolder. Every page
+    in that folder (and below) is wrapped by it automatically.
+</p>
+
+<h2>The shortest possible layout</h2>
+<pre><code>&lt;nav&gt;...&lt;/nav&gt;
+&lt;main&gt;
+    @@Body
+&lt;/main&gt;</code></pre>
+
+<p>
+    You don't write <code>@@inherits LayoutComponentBase</code> — the
+    <code>AspNext.Runtime.targets</code> MSBuild target injects it on first build (idempotent).
+    If you'd rather a different base class, write <code>@@inherits MyBase</code> up-front and
+    the auto-injection becomes a noop.
+</p>
+
+<h2>Nesting</h2>
+<p>Layouts compose — each <code>_layout.razor</code> in an ancestor directory wraps the next:</p>
+<pre><code>Pages/_layout.razor                ← root (nav, footer)
+Pages/Blog/_layout.razor           ← blog-specific shell (e.g. categories bar)
+Pages/Blog/[slug].razor            ← page renders inside Blog layout, inside root layout
+Pages/Counter.razor                ← only the root layout</code></pre>
+
+<p>
+    The generator detects the chain by walking from the page's directory upward and emits a
+    <code>[Layout(typeof(OuterLayout))]</code> attribute on each inner layout's partial.
+    Blazor follows the chain at render time.
+</p>
+
+<h2>Cascading <code>[Authorize]</code></h2>
+<p>
+    Add <code>@@attribute [Authorize]</code> to a layout — the generator copies the attribute
+    onto every page beneath it. The whole subtree is protected with one line.
+</p>
+<pre><code>@@* Pages/Dashboard/_layout.razor *@@
+@@attribute [Authorize]
+
+&lt;aside&gt;...sidebar...&lt;/aside&gt;
+@@Body</code></pre>
+
+<p>
+    Parameterized variants work too: <code>@@attribute [Authorize(Roles="admin")]</code> or
+    <code>@@attribute [Authorize(Policy="adults-only")]</code>.
+</p>
+
+<h2>Explicit override</h2>
+<p>
+    Want to use a layout that lives somewhere other than the conventional
+    <code>_layout.razor</code>? Use the magic comment:
+</p>
+<pre><code>@@* @@nxt:layout=MyApp.Some.OtherLayout *@@</code></pre>
+
+<p>The explicit form takes precedence over auto-detection.</p>

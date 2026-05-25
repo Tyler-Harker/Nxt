@@ -1,0 +1,92 @@
+<h1>CLI reference</h1>
+
+<p>
+    Once <code>nxt</code> is on PATH (installed via the platform script), every command
+    accepts <code>--help</code>.
+</p>
+
+<h2><code>nxt new &lt;name&gt;</code></h2>
+<p>Scaffolds a new app from the <code>Nxt.Templates</code> template package.</p>
+<pre><code>nxt new my-app
+cd my-app
+nxt dev</code></pre>
+
+<h2><code>nxt dev</code></h2>
+<p>Runs the app with hot reload (wraps <code>dotnet watch</code>).</p>
+<table>
+    <thead><tr><th>Flag</th><th>What</th></tr></thead>
+    <tbody>
+        <tr><td><code>--project &lt;path&gt;</code></td><td>Run a specific .csproj instead of the current directory's.</td></tr>
+        <tr><td><code>--port &lt;n&gt;</code> / <code>-p</code></td><td>Bind on <code>http://localhost:&lt;n&gt;</code>.</td></tr>
+        <tr><td><code>--urls &lt;urls&gt;</code></td><td>Full URL(s) to bind, e.g. <code>http://0.0.0.0:5099;https://0.0.0.0:7099</code>.</td></tr>
+    </tbody>
+</table>
+
+<h2><code>nxt build</code></h2>
+<p>Publishes the app for production AND prerenders every static page to disk.</p>
+<table>
+    <thead><tr><th>Flag</th><th>What</th></tr></thead>
+    <tbody>
+        <tr><td><code>--configuration &lt;name&gt;</code></td><td>Build configuration. Default <code>Release</code>.</td></tr>
+        <tr><td><code>--output &lt;dir&gt;</code></td><td>Publish destination. Default <code>./publish</code>.</td></tr>
+    </tbody>
+</table>
+<p>
+    The SSG pass works by setting <code>NXT_PRERENDER=1</code> and launching the published
+    DLL — the runtime detects the flag, renders every static-marked route into the cache (and
+    to disk if <code>StaticOutputDirectory</code> is set), then exits without binding a port.
+</p>
+
+<h2><code>nxt start</code></h2>
+<p>Runs the published build in production mode. <code>--port</code> / <code>--urls</code> as above.</p>
+
+<h2><code>nxt publish</code></h2>
+<p>
+    Three publish modes selected by flag — combine them in one invocation if you like.
+    Every mode runs <code>dotnet publish</code> first so the output is fresh.
+</p>
+<table>
+    <thead><tr><th>Flag</th><th>What</th></tr></thead>
+    <tbody>
+        <tr><td><code>--static &lt;dir&gt;</code> / <code>-s</code></td>
+            <td>Boots the published app on a random local port, crawls every page reachable
+            from <code>/</code> via internal <code>&lt;a href&gt;</code> links, and saves
+            each response as <code>&lt;dir&gt;/&lt;path&gt;/index.html</code>. Also copies
+            <code>wwwroot/</code>. Drop the result on any static host.</td></tr>
+        <tr><td><code>--image &lt;tag&gt;</code> / <code>-i</code></td>
+            <td>Generates a <code>Dockerfile</code> (only if missing) and runs
+            <code>docker build -t &lt;tag&gt;</code>.</td></tr>
+        <tr><td><code>--push &lt;registry/tag&gt;</code></td>
+            <td>After <code>--image</code>, also tag (if different) and
+            <code>docker push</code>.</td></tr>
+        <tr><td><code>--docker-context &lt;path&gt;</code></td>
+            <td>Override the docker build context (default: project dir). Use the repo root
+            if your csproj has <code>ProjectReference</code>s outside the project dir.</td></tr>
+        <tr><td><code>--bundle &lt;path&gt;</code> / <code>-b</code></td>
+            <td>Tars the <code>publish/</code> folder. Compression chosen by extension —
+            <code>.tar.gz</code>, <code>.tar.bz2</code>, <code>.tar.xz</code>.</td></tr>
+    </tbody>
+</table>
+
+<pre><code># Export the docs as static HTML for Cloudflare Pages
+nxt publish --static ./out
+
+# Build &amp; push a Docker image
+nxt publish --image myapp:v1 --push registry.fly.io/myapp:v1
+
+# Tarball for scp
+nxt publish --bundle ./dist/myapp.tar.gz</code></pre>
+
+<h2><code>nxt update</code></h2>
+<p>
+    Downloads the latest source from GitHub, re-packs Runtime/CLI/Templates, clears NuGet
+    caches, and reinstalls the CLI + template in one step.
+</p>
+<table>
+    <thead><tr><th>Flag</th><th>What</th></tr></thead>
+    <tbody>
+        <tr><td><code>--repo &lt;url&gt;</code></td><td>GitHub repo URL. Default <code>https://github.com/Tyler-Harker/Nxt</code>.</td></tr>
+        <tr><td><code>--branch &lt;name&gt;</code></td><td>Branch or tag. Default <code>master</code>.</td></tr>
+        <tr><td><code>--keep-source</code></td><td>Don't delete the downloaded source after install.</td></tr>
+    </tbody>
+</table>

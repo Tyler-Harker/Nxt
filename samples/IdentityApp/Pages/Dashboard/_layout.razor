@@ -1,0 +1,108 @@
+@inherits global::Microsoft.AspNetCore.Components.LayoutComponentBase
+@attribute [Authorize]
+
+@*
+    Mobile-first dashboard layout.
+
+    Strategy: a hidden checkbox + a <label> "hamburger" lets the sidebar slide in/out
+    purely via CSS — no JS, works under static SSR. On screens ≥ 720px the sidebar is
+    permanently visible and the toggle/backdrop are hidden.
+*@
+
+<style>
+    .dash {
+        --sidebar-width: 240px;
+        --bg: #f7f8fa;
+        --sidebar-bg: #1e293b;
+        --sidebar-fg: #cbd5e1;
+        --sidebar-fg-active: #fff;
+        --sidebar-accent: #6cf;
+    }
+    .dash *, .dash *::before, .dash *::after { box-sizing: border-box; }
+
+    /* Hide the real checkbox — its :checked state drives the sidebar visibility. */
+    .dash-toggle { position: absolute; opacity: 0; pointer-events: none; }
+
+    /* Top bar (hamburger + label) — mobile only by default. */
+    .dash-topbar {
+        display: flex; align-items: center; gap: .75rem;
+        background: var(--sidebar-bg); color: var(--sidebar-fg-active);
+        padding: .75rem 1rem; position: sticky; top: 0; z-index: 30;
+    }
+    .dash-hamburger {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; border-radius: 6px;
+        cursor: pointer; user-select: none; font-size: 1.25rem; line-height: 1;
+        background: transparent; color: inherit;
+    }
+    .dash-hamburger:hover { background: rgba(255,255,255,.1); }
+    .dash-title { font-weight: 600; font-size: 1rem; }
+
+    /* Sidebar — fixed off-screen by default; slides in when checkbox is checked. */
+    .dash-sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--sidebar-bg); color: var(--sidebar-fg);
+        padding: 1rem .5rem; overflow-y: auto;
+        transform: translateX(-100%); transition: transform .2s ease;
+        z-index: 40;
+    }
+    .dash-toggle:checked ~ .dash-sidebar { transform: translateX(0); }
+
+    .dash-brand { color: #fff; font-weight: 600; padding: .5rem .75rem 1rem; }
+    .dash-nav { display: flex; flex-direction: column; gap: .25rem; }
+    .dash-nav a {
+        display: flex; align-items: center; gap: .5rem;
+        padding: .5rem .75rem; border-radius: 4px;
+        color: var(--sidebar-fg); text-decoration: none; font-size: .95rem;
+    }
+    .dash-nav a:hover { background: rgba(255,255,255,.07); color: var(--sidebar-fg-active); }
+    .dash-nav .icon { width: 18px; text-align: center; opacity: .7; }
+    .dash-nav .divider { height: 1px; background: rgba(255,255,255,.08); margin: .5rem 0; }
+
+    /* Backdrop for mobile when sidebar is open. */
+    .dash-backdrop {
+        position: fixed; inset: 0; background: rgba(0,0,0,.5);
+        opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 35;
+    }
+    .dash-toggle:checked ~ .dash-backdrop { opacity: 1; pointer-events: auto; }
+
+    /* Main content area. */
+    .dash-main {
+        background: var(--bg); min-height: calc(100vh - 60px);
+        padding: 1.25rem;
+    }
+
+    /* Desktop: ≥ 720px gets persistent sidebar, no toggle. */
+    @@media (min-width: 720px) {
+        .dash-topbar { display: none; }
+        .dash-sidebar { transform: translateX(0); }
+        .dash-backdrop { display: none; }
+        .dash-main { margin-left: var(--sidebar-width); min-height: 100vh; }
+    }
+</style>
+
+<div class="dash">
+    <input type="checkbox" id="dash-toggle" class="dash-toggle" />
+
+    <div class="dash-topbar">
+        <label for="dash-toggle" class="dash-hamburger" aria-label="Toggle navigation">☰</label>
+        <span class="dash-title">Dashboard</span>
+    </div>
+
+    <aside class="dash-sidebar">
+        <div class="dash-brand">🔒 Dashboard</div>
+        <nav class="dash-nav">
+            <a href="/dashboard/profile"><span class="icon">👤</span>Profile</a>
+            <a href="/dashboard/settings"><span class="icon">⚙️</span>Settings</a>
+            <div class="divider"></div>
+            <a href="/"><span class="icon">←</span>Back to home</a>
+        </nav>
+    </aside>
+
+    <label for="dash-toggle" class="dash-backdrop" aria-hidden="true"></label>
+
+    <main class="dash-main">
+        @Body
+    </main>
+</div>

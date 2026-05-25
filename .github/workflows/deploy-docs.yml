@@ -1,0 +1,90 @@
+name: Deploy docs to GitHub Pages
+
+#
+# Builds samples/DocsApp via `nxt publish --static` and pushes the resulting folder to
+# GitHub Pages. Triggers:
+#
+#   - on push to master, but only when files that affect the docs change
+#   - manually via the Actions tab (workflow_dispatch)
+#
+# To enable this for your fork:
+#   1. Repo Settings → Pages → Build and deployment → Source: "GitHub Actions"
+#   2. Push to master (or click "Run workflow"); the URL will appear on the deploy job
+#
+# If you fork to a repo with a different name, update REPO_BASE_PATH below (it becomes
+# the `--base-path` passed to `nxt publish` and prefixes every absolute internal URL in
+# the exported HTML so links resolve under https://<user>.github.io/<repo>/).
+#
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'samples/DocsApp/**'
+      - 'src/Nxt.Runtime/**'
+      - 'src/Nxt.Generators/**'
+      - 'src/Nxt.Cli/**'
+      - 'install-tailwind'
+      - '.github/workflows/deploy-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent Pages deployment; don't cancel in-progress runs so a new
+# deploy waits for the previous one to finish cleanly.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # The URL path prefix the site lives under. For "Tyler-Harker/Nxt" that's "/Nxt/".
+  # If you fork to a differently-named repo, change this.
+  REPO_BASE_PATH: /Nxt/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Tailwind CLI
+        # `bash` invocation in case the execute bit doesn't survive checkout.
+        run: bash ./install-tailwind
+
+      - name: Pack + install nxt CLI globally
+        # DocsApp uses ProjectReference to src/Nxt.Runtime, so we only need to install the
+        # CLI itself — `dotnet publish` will compile Runtime + Generators from source.
+        run: |
+          dotnet pack src/Nxt.Cli -c Release -o ./nupkg --nologo -v quiet
+          dotnet tool install -g --add-source "$(pwd)/nupkg" Nxt.Cli
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Static-export DocsApp
+        run: |
+          nxt publish \
+            --project samples/DocsApp/DocsApp.csproj \
+            --static  ./_site \
+            --base-path "$REPO_BASE_PATH"
+
+      - name: Upload artifact for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

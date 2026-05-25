@@ -1,0 +1,50 @@
+<h1>Middleware</h1>
+
+<p>
+    Custom middleware lives anywhere in your project. Mark a class with
+    <code>[Middleware]</code> and Nxt's source generator registers it in the pipeline.
+</p>
+
+<h2>Example: a request logger</h2>
+<pre><code>using Nxt;
+
+namespace SampleApp.Middleware;
+
+[Middleware(order: 10)]
+public class RequestLogger(ILogger&lt;RequestLogger&gt; logger)
+&#123;
+    public async Task InvokeAsync(HttpContext ctx, RequestDelegate next)
+    &#123;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await next(ctx);
+        logger.LogInformation("&#123;Method&#125; &#123;Path&#125; → &#123;Status&#125; in &#123;Ms&#125;ms",
+            ctx.Request.Method, ctx.Request.Path,
+            ctx.Response.StatusCode, sw.ElapsedMilliseconds);
+    &#125;
+&#125;</code></pre>
+
+<h2>Rules</h2>
+<ul>
+    <li>The class must define
+        <code>InvokeAsync(HttpContext, RequestDelegate)</code> — matches the ASP.NET Core
+        convention.</li>
+    <li>Constructor injection works — the class is resolved from the request scope.</li>
+    <li><code>order</code> controls relative ordering — lower runs earlier in the pipeline.
+        Default is <code>100</code>.</li>
+    <li>Middleware runs <em>after</em> Nxt's built-in pieces
+        (<code>UseAntiforgery</code>, etc.) and <em>before</em> endpoint execution.</li>
+</ul>
+
+<h2>When NOT to use this</h2>
+<p>
+    For middleware that needs precise positioning (<code>UseAuthentication</code>,
+    <code>UseSession</code>, <code>UseForwardedHeaders</code>), use
+    <code>NxtHostOptions.ConfigureMiddleware</code> in <code>Program.cs</code> — it slots
+    your middleware between <code>UseRouting</code> and the endpoint mappings:
+</p>
+
+<pre><code>opts.ConfigureMiddleware = app =&gt;
+&#123;
+    app.UseAuthentication();
+    app.UseAuthorization();
+&#125;;</code></pre>

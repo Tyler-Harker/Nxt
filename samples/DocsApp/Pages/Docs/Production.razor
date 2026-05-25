@@ -1,0 +1,94 @@
+<h1>Going to production</h1>
+
+<p>The condensed checklist.</p>
+
+<h2>1. Pick a publish mode</h2>
+<p>
+    <code>nxt publish</code> packages your app three ways — pick whatever matches your
+    target. Every mode runs <code>dotnet publish</code> first so the output is fresh.
+</p>
+<table>
+    <thead><tr><th>If you're deploying to…</th><th>Run</th></tr></thead>
+    <tbody>
+        <tr><td>Cloudflare Pages, GitHub Pages, Netlify, S3+CloudFront (any static host)</td>
+            <td><code>nxt publish --static ./out</code></td></tr>
+        <tr><td>Docker host, Kubernetes, Fly.io, Render, Cloud Run</td>
+            <td><code>nxt publish --image myapp:v1 [--push registry/myapp:v1]</code></td></tr>
+        <tr><td>A VM you'll <code>scp</code> a tarball to</td>
+            <td><code>nxt publish --bundle ./dist/myapp.tar.gz</code></td></tr>
+    </tbody>
+</table>
+
+<p>
+    See <a href="/docs/cli"><code>nxt publish</code> reference</a> for the full flag list.
+    For the Docker mode, if your csproj has <code>ProjectReference</code>s outside the
+    project dir (typical for in-repo dev), pass
+    <code>--docker-context &lt;repo-root&gt;</code>.
+</p>
+
+<h2>2. Set production env vars</h2>
+<pre><code>ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_URLS=http://0.0.0.0:8080
+ConnectionStrings__Default=...
+# Leave NXT_PRERENDER unset — only `nxt build` sets it.</code></pre>
+
+<p>
+    Static hosts ignore env vars entirely — the
+    <code>--static</code> output is just HTML + CSS + JS. For Docker / VM deploys, set these
+    via your platform's secret store or systemd unit.
+</p>
+
+<h2>3. The auto-generated Dockerfile</h2>
+<p>
+    <code>nxt publish --image</code> writes one if missing. It's a standard multistage SDK →
+    ASP.NET image — tweak it freely, the command won't overwrite an existing file.
+</p>
+<pre><code># syntax=docker/dockerfile:1
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+ARG CONFIG=Release
+RUN dotnet publish -c $CONFIG -o /app --nologo -v quiet
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app ./
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "MyApp.dll"]</code></pre>
+
+<h2>4. HTTPS + reverse proxy</h2>
+<p>
+    Don't expose Kestrel directly — front it with nginx, Caddy, or a cloud LB. Inside the
+    app, accept the forwarded headers so <code>Request.IsHttps</code> and
+    <code>Request.Host</code> reflect the public values:
+</p>
+
+<pre><code>opts.ConfigureBeforeRouting = app =&gt; app.UseForwardedHeaders(new()
+&#123;
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+&#125;);</code></pre>
+
+<h2>5. App-specific gotchas</h2>
+<ul>
+    <li><strong>Identity</strong> — move off SQLite to Postgres/SQL Server. Use EF
+        migrations, not <code>EnsureCreated()</code>. Wire up a real email sender. Persist
+        DataProtection keys so cookies survive multi-instance deploys.</li>
+    <li><strong>WASM</strong> — set long cache headers on <code>/_framework/*.wasm</code>.
+        The br/gz variants are already in the manifest.</li>
+    <li><strong>Tailwind</strong> — make CI run <code>./install-tailwind</code> (or commit a
+        fallback <code>wwwroot/site.css</code>).</li>
+    <li><strong>ISR</strong> — the revalidation worker is per-instance. For multi-instance
+        deploys, that means each replica re-renders independently. Usually fine.</li>
+</ul>
+
+<h2>6. Worth adding before you ship</h2>
+<ul>
+    <li><strong>Health endpoint</strong> — <code>AddHealthChecks()</code> in
+        <code>ConfigureServices</code> and <code>app.MapHealthChecks("/healthz")</code> in
+        <code>ConfigureAfterEndpoints</code>.</li>
+    <li><strong>Structured logging</strong> — Serilog or OpenTelemetry.</li>
+    <li><strong>Secrets</strong> — env vars or platform secret store, never
+        <code>appsettings.json</code> in source control.</li>
+</ul>

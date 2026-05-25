@@ -1,0 +1,57 @@
+<h1>Routing &amp; pages</h1>
+
+<p>
+    Files in <code>Pages/</code> become URLs at build time. The Nxt source generator walks
+    the directory, derives a route pattern from the file path, and emits a
+    <code>[Route]</code> attribute on the page's compiled partial class so Blazor's router
+    picks it up.
+</p>
+
+<h2>The basics</h2>
+<table>
+    <thead><tr><th>File</th><th>URL</th></tr></thead>
+    <tbody>
+        <tr><td><code>Pages/Index.razor</code></td><td><code>/</code></td></tr>
+        <tr><td><code>Pages/About.razor</code></td><td><code>/about</code></td></tr>
+        <tr><td><code>Pages/Blog/Index.razor</code></td><td><code>/blog</code></td></tr>
+        <tr><td><code>Pages/Blog/Post.razor</code></td><td><code>/blog/post</code></td></tr>
+    </tbody>
+</table>
+
+<p>URLs are lowercased automatically; folders become path segments.</p>
+
+<h2>Dynamic segments</h2>
+<p>Wrap a filename segment in square brackets to capture it as a route parameter.</p>
+<table>
+    <thead><tr><th>File</th><th>URL pattern</th></tr></thead>
+    <tbody>
+        <tr><td><code>Pages/Blog/[slug].razor</code></td><td><code>/blog/&#123;slug&#125;</code></td></tr>
+        <tr><td><code>Pages/Users/[id]/Posts.razor</code></td><td><code>/users/&#123;id&#125;/posts</code></td></tr>
+        <tr><td><code>Pages/Files/[...path].razor</code></td><td><code>/files/&#123;*path&#125;</code> (catch-all)</td></tr>
+    </tbody>
+</table>
+
+<p>Bind the captured value via a parameter property:</p>
+<pre><code>&lt;h1&gt;Post: @@Slug&lt;/h1&gt;
+
+@@code &#123;
+    [Parameter] public string Slug &#123; get; set; &#125; = "";
+&#125;</code></pre>
+
+<h2>Render modes (via magic comment)</h2>
+<p>Stick a magic comment at the top of the file to change how it renders:</p>
+<pre><code>@@* @@nxt:static *@@                  → SSG (build-time prerender)
+@@* @@nxt:revalidate=60 *@@           → ISR (cached, regenerate every 60s)
+@@* @@nxt:interactive-server *@@      → SSR + Blazor Server hydration
+@@* @@nxt:interactive-wasm *@@        → SSR + Blazor WebAssembly hydration
+@@* @@nxt:layout=My.Custom.Layout *@@ → override the auto-detected layout</code></pre>
+
+<p>Without any directive, the page is plain SSR.</p>
+
+<h2>Razor (<code>.cshtml</code>) pages</h2>
+<p>
+    Drop a <code>.cshtml</code> file in <code>Pages/</code> and it's routed the same way as
+    a Razor component. The runtime renders it via the MVC Razor view engine. Use this when
+    you need the Razor Pages programming model (e.g., <code>ViewData</code>,
+    <code>@@inject</code> in views) instead of Blazor.
+</p>

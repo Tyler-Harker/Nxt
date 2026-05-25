@@ -1,0 +1,43 @@
+@inherits global::Microsoft.AspNetCore.Components.LayoutComponentBase
+@inject AuthenticationStateProvider AuthState
+
+<style>
+body {
+    margin: 0px;
+}
+</style>
+
+<nav style="background:#222;color:#fff;padding:1rem">
+    <a href="/" style="color:#fff;margin-right:1rem">Home</a>
+    <a href="/dashboard/profile" style="color:#fff;margin-right:1rem">Profile (protected)</a>
+    @if (_user?.Identity?.IsAuthenticated == true)
+    {
+        <span style="float:right">
+            Signed in as <strong>@_user.Identity.Name</strong>
+            <form method="post" action="/api/auth/logout" style="display:inline;margin-left:1rem">
+                <AntiforgeryToken />
+                <button type="submit" style="background:#666;color:#fff;border:0;padding:.25rem .75rem;border-radius:3px">Sign out</button>
+            </form>
+        </span>
+    }
+    else
+    {
+        <span style="float:right">
+            <a href="/auth/login" style="color:#fff;margin-right:.5rem">Sign in</a>
+            <a href="/auth/register" style="color:#fff">Register</a>
+        </span>
+    }
+</nav>
+<main style="padding:2rem;font-family:system-ui;max-width:720px">
+    @Body
+</main>
+
+@code {
+    System.Security.Claims.ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _user = state.User;
+    }
+}

@@ -1,0 +1,24 @@
+@*
+    Interactive counter that runs in the browser via WebAssembly.
+
+    This component lives in WasmApp.Client (Microsoft.NET.Sdk.BlazorWebAssembly), so its
+    compiled DLL is shipped to the browser as part of the WASM bundle. The server-side page
+    embeds it with @rendermode="InteractiveWebAssembly", which makes Blazor swap the static
+    SSR output for a live WASM-driven component once the runtime loads.
+*@
+
+<div style="border:1px solid #ccc;padding:1rem;border-radius:6px;background:#f7f7f7;font-family:system-ui">
+    <p style="margin:0 0 .75rem">Current count: <strong style="font-size:1.25rem">@count</strong></p>
+    <button @onclick="() => count++"
+            style="padding:.5rem 1rem;background:#6cf;color:#fff;border:0;border-radius:4px;cursor:pointer">
+        Click me
+    </button>
+    <p style="margin:.75rem 0 0;font-size:.85em;color:#666">
+        This button runs in WebAssembly. Open DevTools → Network and you'll see
+        <code>dotnet.wasm</code> + framework <code>.dll</code> files loaded on first interaction.
+    </p>
+</div>
+
+@code {
+    int count;
+}

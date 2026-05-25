@@ -1,0 +1,63 @@
+@inherits global::Microsoft.AspNetCore.Components.LayoutComponentBase
+@inject NavigationManager Nav
+
+<link rel="stylesheet" href="/site.css" />
+<title>Nxt Docs</title>
+
+<input type="checkbox" id="dnav" class="peer/dnav hidden" />
+
+<div class="min-h-screen bg-slate-50 text-slate-900">
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
+            <label for="dnav"
+                   class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 lg:hidden"
+                   aria-label="Toggle navigation">☰</label>
+            <a href="/" class="flex items-center gap-2 font-semibold text-slate-900">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-brand-500 to-brand-700 text-sm text-white">N</span>
+                <span>Nxt Docs</span>
+            </a>
+            <nav class="ml-auto hidden gap-5 text-sm text-slate-600 sm:flex">
+                <a href="/docs/start" class="hover:text-brand-600">Get started</a>
+                <a href="https://github.com/Tyler-Harker/Nxt" class="hover:text-brand-600"
+                   target="_blank" rel="noreferrer">GitHub ↗</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="mx-auto flex max-w-7xl gap-8 px-4 py-8 lg:py-10">
+        <!-- Sidebar — fixed off-canvas on mobile; permanent on lg -->
+        <aside class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full overflow-y-auto border-r border-slate-200 bg-white px-4 pb-10 pt-20
+                      transition-transform peer-checked/dnav:translate-x-0
+                      lg:sticky lg:top-20 lg:z-auto lg:h-[calc(100vh-5rem)] lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:pt-0">
+            <NavSection Title="Introduction">
+                <SideLink Href="/"             Label="Overview" />
+                <SideLink Href="/docs/start"   Label="Getting started" />
+            </NavSection>
+            <NavSection Title="Concepts">
+                <SideLink Href="/docs/routing"     Label="Routing &amp; pages" />
+                <SideLink Href="/docs/layouts"     Label="Layouts" />
+                <SideLink Href="/docs/rendering"   Label="Render modes" />
+                <SideLink Href="/docs/api"         Label="API endpoints" />
+                <SideLink Href="/docs/middleware"  Label="Middleware" />
+                <SideLink Href="/docs/auth"        Label="Authorization" />
+                <SideLink Href="/docs/wasm"        Label="Blazor WebAssembly" />
+                <SideLink Href="/docs/tailwind"    Label="Tailwind" />
+            </NavSection>
+            <NavSection Title="Reference">
+                <SideLink Href="/docs/cli"        Label="CLI" />
+                <SideLink Href="/docs/production" Label="Production" />
+            </NavSection>
+        </aside>
+
+        <!-- Backdrop for mobile -->
+        <label for="dnav"
+               class="fixed inset-0 z-30 hidden cursor-pointer bg-black/50 peer-checked/dnav:block lg:hidden"
+               aria-hidden="true"></label>
+
+        <main class="min-w-0 flex-1">
+            <article class="prose">
+                @Body
+            </article>
+        </main>
+    </div>
+</div>

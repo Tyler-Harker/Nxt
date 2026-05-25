@@ -1,0 +1,46 @@
+<h1>Getting started</h1>
+
+<p>Nxt isn't on NuGet.org yet — install via the bootstrap script for your platform.</p>
+
+<h2>1. Clone &amp; install</h2>
+<pre><code>git clone https://github.com/Tyler-Harker/Nxt.git
+cd Nxt
+
+# Linux:
+./install-linux
+
+# macOS:
+./install-macos
+
+# Windows (PowerShell):
+.\install-windows.ps1</code></pre>
+
+<p>
+    The script packs <code>Nxt.Runtime</code>, <code>Nxt.Cli</code>, and
+    <code>Nxt.Templates</code>, registers <code>./nupkg</code> as a NuGet source, installs
+    the CLI globally, and adds <code>~/.dotnet/tools</code> to PATH if missing.
+</p>
+
+<h2>2. Scaffold an app</h2>
+<pre><code>nxt new my-app
+cd my-app
+nxt dev          # http://localhost:5000</code></pre>
+
+<h2>3. The generated layout</h2>
+<pre><code>my-app/
+├── Program.cs               # one line: await NxtHost.RunAsync(args);
+├── Pages/
+│   ├── Index.razor          → /
+│   └── About.cshtml         → /about
+├── Api/
+│   └── HelloEndpoint.cs     → /api/hello
+└── Middleware/
+    └── (auto-registered classes with [Middleware])</code></pre>
+
+<h2>4. Updating</h2>
+<p>To pull the latest source and reinstall everything in one shot:</p>
+<pre><code>nxt update</code></pre>
+<p>
+    Options: <code>--repo &lt;url&gt;</code> for a fork, <code>--branch &lt;name&gt;</code>
+    for a specific branch.
+</p>

@@ -1,0 +1,15 @@
+@*
+    Sidebar group header + a slot for <NavLink/> children. Kept tiny on purpose — the
+    layout just stacks several of these.
+*@
+<div class="mb-6">
+    <h4 class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">@Title</h4>
+    <ul class="space-y-0.5">
+        @ChildContent
+    </ul>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

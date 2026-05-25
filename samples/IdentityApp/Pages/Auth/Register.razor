@@ -1,0 +1,30 @@
+<h1>Create an account</h1>
+
+@if (Error is not null)
+{
+    <p style="color:#c00"><strong>@Error</strong></p>
+}
+
+<form method="post" action="/api/auth/register" style="display:flex;flex-direction:column;gap:.75rem;max-width:320px">
+    <AntiforgeryToken />
+    <label>
+        Email
+        <input name="email" type="email" required autofocus
+               style="display:block;padding:.5rem;width:100%;box-sizing:border-box" />
+    </label>
+    <label>
+        Password (6+ chars)
+        <input name="password" type="password" required minlength="6"
+               style="display:block;padding:.5rem;width:100%;box-sizing:border-box" />
+    </label>
+    <button type="submit"
+            style="padding:.75rem;background:#0a66c2;color:#fff;border:0;border-radius:4px;font-size:1rem">
+        Create account
+    </button>
+</form>
+
+<p style="margin-top:1rem">Already have an account? <a href="/auth/login">Sign in</a>.</p>
+
+@code {
+    [SupplyParameterFromQuery] public string? Error { get; set; }
+}

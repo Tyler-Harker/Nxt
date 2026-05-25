@@ -1,0 +1,34 @@
+<h1 class="text-3xl font-bold text-slate-900">Card examples</h1>
+<p class="mt-2 text-slate-600">Just to show off a few Tailwind utility combinations.</p>
+
+<div class="mt-8 grid gap-6 lg:grid-cols-2">
+    @foreach (var card in _cards)
+    {
+        <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+            <div class="flex items-center gap-4 p-6">
+                <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-xl @card.IconBg">
+                    @card.Icon
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">@card.Title</h2>
+                    <p class="text-sm text-slate-600">@card.Subtitle</p>
+                </div>
+            </div>
+            <div class="border-t border-slate-100 bg-slate-50 px-6 py-3 text-xs text-slate-500">
+                @card.Footer
+            </div>
+        </article>
+    }
+</div>
+
+@code {
+    record Card(string Icon, string IconBg, string Title, string Subtitle, string Footer);
+
+    readonly Card[] _cards =
+    {
+        new("🚀", "bg-blue-100 text-blue-700",     "Ship fast",    "File-based routing, no boilerplate.", "Nxt convention"),
+        new("🔒", "bg-emerald-100 text-emerald-700","Type safe",    "Compile-time route generation.",       "Roslyn source generator"),
+        new("📦", "bg-amber-100 text-amber-700",   "One binary",   "Standalone CLI ships everything you need.", "Tailwind v4"),
+        new("🌗", "bg-purple-100 text-purple-700", "Themeable",    "Override design tokens in @theme.",    "CSS-first config"),
+    };
+}

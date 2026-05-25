@@ -1,0 +1,21 @@
+/*
+ * Source CSS for Tailwind. Tailwind v4 scans the configured source roots for class names
+ * used in your markup and emits only the utilities you actually reference into wwwroot/site.css.
+ *
+ * @source tells the v4 compiler where to look. By default it looks at sibling files; we
+ * point it at every .razor and .cshtml under Pages/ so any class we type in markup gets
+ * picked up. Add more @source lines for Components/, Layouts/, etc.
+ */
+
+@import "tailwindcss";
+
+@source "../Pages/**/*.razor";
+@source "../Pages/**/*.cshtml";
+
+/* Custom theme tweaks go in a @theme block (v4 syntax). */
+@theme {
+    --color-brand-50:  #eff6ff;
+    --color-brand-500: #3b82f6;
+    --color-brand-600: #2563eb;
+    --color-brand-700: #1d4ed8;
+}

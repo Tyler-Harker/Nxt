@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Nxt;
 
@@ -13,19 +12,36 @@ namespace Nxt;
 /// <code>
 /// await NxtHost.RunAsync(args);
 /// </code>
-/// Apps that need to register their own services can use <see cref="CreateBuilder"/> and
-/// <see cref="ConfigureApp"/> separately for full control.
+/// Apps that need to wire services or middleware pass a configuration callback:
+/// <code>
+/// await NxtHost.RunAsync(args, opts =>
+/// {
+///     opts.ConfigureServices = builder => builder.Services.AddDbContext&lt;AppDbContext&gt;(...);
+///     opts.ConfigureMiddleware = app => { app.UseAuthentication(); app.UseAuthorization(); };
+/// });
+/// </code>
+/// See <see cref="NxtHostOptions"/> for every hook + the position it slots into the pipeline.
 /// </summary>
 public static class NxtHost
 {
     /// <summary>Builds, configures, and runs the Nxt app. Returns when the host shuts down.</summary>
-    public static async Task RunAsync(string[] args, Action<WebApplicationBuilder>? configureServices = null, Action<WebApplication>? configureApp = null)
+    public static async Task RunAsync(string[] args, Action<NxtHostOptions>? configure = null)
     {
-        var builder = CreateBuilder(args);
-        configureServices?.Invoke(builder);
+        var opts = new NxtHostOptions();
+        configure?.Invoke(opts);
+
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Enable static-web-assets in every environment (not just Development) so
+        // MapStaticAssets can serve files from referenced projects' manifests — required
+        // for Blazor WASM bundles, Razor Class Library assets, etc.
+        builder.WebHost.UseStaticWebAssets();
+
+        builder.Services.AddNxt();
+        opts.ConfigureServices?.Invoke(builder);
+
         var app = builder.Build();
-        ConfigureApp(app);
-        configureApp?.Invoke(app);
+        ConfigurePipeline(app, opts);
 
         // SSG prerender mode — invoked by `nxt build`. Render static pages then exit.
         if (Environment.GetEnvironmentVariable("NXT_PRERENDER") is "1")
@@ -39,33 +55,41 @@ public static class NxtHost
         await app.RunAsync();
     }
 
-    public static WebApplicationBuilder CreateBuilder(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
-        builder.Services.AddNxt();
-        return builder;
-    }
+    /// <summary>Backward-compatible overload — services + post-endpoint hook only.
+    /// Prefer the <see cref="NxtHostOptions"/> overload for new code.</summary>
+    public static Task RunAsync(string[] args,
+        Action<WebApplicationBuilder>? configureServices,
+        Action<WebApplication>? configureApp = null)
+        => RunAsync(args, opts =>
+        {
+            opts.ConfigureServices = configureServices;
+            opts.ConfigureAfterEndpoints = configureApp;
+        });
 
-    public static WebApplication ConfigureApp(WebApplication app)
+    private static void ConfigurePipeline(WebApplication app, NxtHostOptions opts)
     {
         if (app.Environment.IsDevelopment())
             app.UseDeveloperExceptionPage();
 
-        app.UseStaticFiles();
-        app.UseRouting();
+        opts.ConfigureBeforeRouting?.Invoke(app);
+        opts.ConfigureMiddleware?.Invoke(app);
         app.UseAntiforgery();
         app.UseNxtMiddleware();
+        // .NET 9's static-web-assets endpoint — required for Blazor framework files served
+        // by referenced WASM-client projects (_framework/blazor.web.js, dotnet.wasm, etc.).
+        // Safe to call even when no manifest is present — it's a no-op.
+        app.MapStaticAssets();
         app.MapNxt();
 
         // Blazor pipeline — handles every .razor page discovered by the generator. The
         // generator emits [Route] + (optional) [RenderModeInteractiveServer] attributes on
-        // each page partial; MapRazorComponents<Root> finds them via reflection and renders
-        // them with proper interactivity (SignalR for server mode).
-        var builder = app.MapRazorComponents<Components.Root>()
+        // each page partial; MapRazorComponents<Root> finds them via reflection.
+        var blazor = app.MapRazorComponents<Components.Root>()
             .AddInteractiveServerRenderMode();
         foreach (var asm in NxtStartupBridge.UserAssemblies)
-            builder.AddAdditionalAssemblies(asm);
+            blazor.AddAdditionalAssemblies(asm);
+        opts.ConfigureRazorEndpoints?.Invoke(blazor);
 
-        return app;
+        opts.ConfigureAfterEndpoints?.Invoke(app);
     }
 }

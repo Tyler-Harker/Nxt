@@ -1,0 +1,63 @@
+<h1>API endpoints</h1>
+
+<p>Two ways to declare an endpoint. Both register as minimal-API routes at startup.</p>
+
+<h2>Convention: any class in an <code>api/</code> folder</h2>
+<p>
+    A class with HTTP-verb methods (<code>GET</code>, <code>POST</code>, <code>PUT</code>,
+    <code>DELETE</code>, <code>PATCH</code>) that lives in any <code>api/</code> folder is
+    auto-registered. No attribute needed.
+</p>
+<table>
+    <thead><tr><th>File</th><th>URL</th></tr></thead>
+    <tbody>
+        <tr><td><code>Api/Hello.cs</code></td><td><code>/api/hello</code></td></tr>
+        <tr><td><code>Pages/Blog/api/Comments.cs</code></td><td><code>/api/blog/comments</code></td></tr>
+        <tr><td><code>Pages/Blog/api/[id].cs</code></td><td><code>/api/blog/&#123;id&#125;</code></td></tr>
+    </tbody>
+</table>
+
+<pre><code>public class Comments(IGreeting greeting)
+&#123;
+    public object GET() =&gt; new &#123; messages = greeting.GetAll() &#125;;
+    public object POST(NewComment req) =&gt; greeting.Add(req);
+&#125;</code></pre>
+
+<p>
+    The URL is derived from the path between <code>Pages/</code> and the <code>api/</code>
+    folder, plus the file's name. Method names matching HTTP verbs become the supported verbs.
+</p>
+
+<h2>Explicit: <code>[ApiRoute]</code></h2>
+<p>Anywhere in your project — the attribute's argument is the URL template appended to <code>/api/</code>:</p>
+<pre><code>[ApiRoute("orders/&#123;id&#125;")]
+public class OrderEndpoint(IOrderService orders)
+&#123;
+    public async Task&lt;Order&gt; GET(int id) =&gt; await orders.GetAsync(id);
+&#125;</code></pre>
+
+<h2>Parameter binding</h2>
+<ul>
+    <li><strong>Route values</strong> — match the method parameter name to the URL token.</li>
+    <li><strong>Query string</strong> — fallback when no route value matches.</li>
+    <li><strong>Body</strong> — a reference-type parameter on a request with
+        <code>Content-Type: application/json</code> is deserialized from the body.</li>
+    <li><strong><code>HttpContext</code></strong> — special-cased; gets the current context
+        injected directly.</li>
+</ul>
+
+<h2>Returning results</h2>
+<ul>
+    <li>Return an <code>IResult</code> (<code>Results.Json</code>,
+        <code>Results.Redirect</code>, …) for full control.</li>
+    <li>Return any object → serialized as JSON.</li>
+    <li>Return a <code>string</code> → served as text.</li>
+    <li>Return <code>void</code>/<code>Task</code> → 200 OK with empty body.</li>
+</ul>
+
+<h2>DI</h2>
+<p>
+    Handler classes are activated per-request via
+    <code>ActivatorUtilities.CreateInstance</code> — register any services your handler's
+    constructor needs in <code>NxtHostOptions.ConfigureServices</code>.
+</p>

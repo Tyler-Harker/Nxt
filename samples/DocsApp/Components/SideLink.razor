@@ -1,0 +1,29 @@
+@inject NavigationManager Nav
+
+<li>
+    <a href="@Href" class="@LinkClass">@Label</a>
+</li>
+
+@code {
+    [Parameter] public string Href { get; set; } = "";
+    [Parameter] public string Label { get; set; } = "";
+
+    string LinkClass
+    {
+        get
+        {
+            // Compare the request's path to this link's href. Each statically-or-server-rendered
+            // page gets its own NavigationManager.Uri, so the active state is baked into the
+            // sidebar markup per page — no JS needed.
+            // Normalize both sides to "/foo/bar" or "/". Trim('/') + leading slash handles
+            // the root case ("/") which TrimEnd alone would mismatch (empty vs "/").
+            var current = "/" + Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+            var target  = "/" + Href.Trim('/');
+            var match = string.Equals(current, target, StringComparison.OrdinalIgnoreCase);
+            var common = "block rounded-md px-2 py-1.5 text-sm";
+            return match
+                ? $"{common} bg-brand-50 font-medium text-brand-700"
+                : $"{common} text-slate-700 hover:bg-slate-100 hover:text-slate-900";
+        }
+    }
+}

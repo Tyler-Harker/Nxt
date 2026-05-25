@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TailwindApp</RootNamespace>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>obj/GeneratedFiles</CompilerGeneratedFilesOutputPath>
+
+    <!-- Path to the standalone Tailwind CLI binary. Override with -p:TailwindCli=… if
+         you've installed it somewhere else. -->
+    <TailwindCli Condition="'$(TailwindCli)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\tools\tailwindcss')">$(MSBuildThisFileDirectory)..\..\tools\tailwindcss</TailwindCli>
+    <TailwindCli Condition="'$(TailwindCli)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe')">$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe</TailwindCli>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nxt.Runtime\Nxt.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\Nxt.Generators\Nxt.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="..\..\src\Nxt.Runtime\build\Nxt.Runtime.targets" />
+
+  <!--
+    Compile Tailwind before C# build so wwwroot/site.css is always fresh and shipped via
+    MapStaticAssets. If the CLI isn't installed, skip with a warning rather than failing —
+    pre-committed wwwroot/site.css still gets served.
+  -->
+  <Target Name="BuildTailwind"
+          BeforeTargets="BeforeBuild"
+          Inputs="Styles/site.css;Pages/**/*.razor;Pages/**/*.cshtml"
+          Outputs="wwwroot/site.css">
+    <Warning Text="Tailwind CLI not found (expected at ../../tools/tailwindcss). Skipping CSS build — existing wwwroot/site.css will be used. Run ./install-tailwind from repo root, or pass -p:TailwindCli=&lt;path&gt;."
+             Condition="'$(TailwindCli)' == ''" />
+    <Exec Command='"$(TailwindCli)" --input Styles/site.css --output wwwroot/site.css --minify'
+          Condition="'$(TailwindCli)' != ''"
+          WorkingDirectory="$(MSBuildThisFileDirectory)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,55 @@
+<h1>Blazor WebAssembly</h1>
+
+<p>
+    WASM components must live in a project built with the
+    <code>Microsoft.NET.Sdk.BlazorWebAssembly</code> SDK — its compiled <code>.dll</code> is
+    what ships to the browser. The standard pattern is two projects: a server
+    (<code>MyApp</code>) and a client (<code>MyApp.Client</code>).
+</p>
+
+<h2>The two-project shape</h2>
+<pre><code>samples/MyApp.Client/         # Microsoft.NET.Sdk.BlazorWebAssembly
+├── MyApp.Client.csproj
+├── Program.cs                # WebAssemblyHostBuilder bootstrap
+└── Counter.razor             # the interactive component
+
+samples/MyApp/                # Microsoft.NET.Sdk.Web (Nxt server)
+├── MyApp.csproj              # references MyApp.Client + WebAssembly.Server pkg
+├── Program.cs                # wires WASM via NxtHostOptions
+└── Pages/
+    └── Index.razor           # &lt;Counter @@rendermode="InteractiveWebAssembly" /&gt;</code></pre>
+
+<h2>Server <code>Program.cs</code></h2>
+<pre><code>await NxtHost.RunAsync(args, opts =&gt;
+&#123;
+    opts.ConfigureServices = b =&gt;
+        b.Services.AddRazorComponents().AddInteractiveWebAssemblyComponents();
+
+    opts.ConfigureRazorEndpoints = blazor =&gt;
+        blazor.AddInteractiveWebAssemblyRenderMode()
+              .AddAdditionalAssemblies(typeof(MyApp.Client.Counter).Assembly);
+&#125;);</code></pre>
+
+<h2>Server <code>.csproj</code></h2>
+<pre><code>&lt;ItemGroup&gt;
+  &lt;ProjectReference Include="..\MyApp.Client\MyApp.Client.csproj" /&gt;
+  &lt;PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server"
+                    Version="10.0.0" /&gt;
+&lt;/ItemGroup&gt;</code></pre>
+
+<h2>How a request flows</h2>
+<ol>
+    <li>Browser hits <code>/</code>, server SSRs the page including the Counter as static
+        markup wrapped in <code>&lt;!--Blazor:webassembly,...--&gt;</code> hydration markers.</li>
+    <li>Page loads <code>/_framework/blazor.web.js</code>.</li>
+    <li>The script reads the markers, requests
+        <code>/_framework/dotnet.wasm</code> + your client's <code>.dll</code>.</li>
+    <li>WASM boots in the browser, takes over the Counter — <code>@@onclick</code> now runs
+        client-side.</li>
+</ol>
+
+<p>
+    The server's <code>Nxt.Runtime</code> calls <code>app.MapStaticAssets()</code> for you,
+    which serves everything from the static-web-assets manifest (the manifest gets the
+    client project's outputs automatically via <code>ProjectReference</code>).
+</p>

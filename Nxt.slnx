@@ -1,6 +1,11 @@
 <Solution>
   <Folder Name="/samples/">
+    <Project Path="samples/DocsApp/DocsApp.csproj" />
+    <Project Path="samples/IdentityApp/IdentityApp.csproj" />
     <Project Path="samples/SampleApp/SampleApp.csproj" />
+    <Project Path="samples/TailwindApp/TailwindApp.csproj" />
+    <Project Path="samples/WasmApp.Client/WasmApp.Client.csproj" />
+    <Project Path="samples/WasmApp/WasmApp.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Nxt.Cli/Nxt.Cli.csproj" />

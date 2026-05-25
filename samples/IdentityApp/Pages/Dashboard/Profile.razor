@@ -1,0 +1,32 @@
+@inject AuthenticationStateProvider AuthState
+
+<h1>Your profile</h1>
+
+@if (_user?.Identity?.IsAuthenticated == true)
+{
+    <dl>
+        <dt><strong>Name</strong></dt>
+        <dd>@_user.Identity.Name</dd>
+        <dt><strong>Auth scheme</strong></dt>
+        <dd>@_user.Identity.AuthenticationType</dd>
+        <dt><strong>Claims</strong></dt>
+        <dd>
+            <ul>
+                @foreach (var c in _user.Claims)
+                {
+                    <li><code>@c.Type</code> = @c.Value</li>
+                }
+            </ul>
+        </dd>
+    </dl>
+}
+
+@code {
+    System.Security.Claims.ClaimsPrincipal? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _user = state.User;
+    }
+}

@@ -1,0 +1,20 @@
+@inject AuthenticationStateProvider AuthState
+
+<h1>Settings</h1>
+<p>
+    Placeholder page so the dashboard sidebar has somewhere to navigate to. Lives at
+    <code>Pages/Dashboard/Settings.razor</code> — inherits the Dashboard layout and is
+    automatically protected by <code>@@attribute [Authorize]</code> cascaded from
+    <code>Pages/Dashboard/_layout.razor</code>.
+</p>
+
+<p>You're signed in as <strong>@_name</strong>.</p>
+
+@code {
+    string? _name;
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _name = state.User.Identity?.Name;
+    }
+}

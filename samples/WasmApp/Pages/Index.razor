@@ -1,0 +1,21 @@
+<h1>Nxt + Blazor WebAssembly</h1>
+<p>
+    This page is rendered server-side. The Counter below comes from <code>samples/WasmApp.Client</code>
+    (a project built with the <code>Microsoft.NET.Sdk.BlazorWebAssembly</code> SDK). Marked
+    with <code>@@rendermode="InteractiveWebAssembly"</code>, it's prerendered as static HTML
+    on first paint, then hydrated by WASM in the browser so the click handler actually runs.
+</p>
+
+<Counter @rendermode="InteractiveWebAssembly" />
+
+<h2>How it's wired</h2>
+<ul>
+    <li><code>WasmApp.Client</code> uses the BlazorWebAssembly SDK; its compiled .dll ships
+        to the browser as WASM.</li>
+    <li><code>WasmApp</code> (server) references Nxt.Runtime, the client project, and the
+        <code>Microsoft.AspNetCore.Components.WebAssembly.Server</code> package.</li>
+    <li><code>Program.cs</code> uses the new <code>NxtHostOptions.ConfigureRazorEndpoints</code>
+        hook to chain <code>AddInteractiveWebAssemblyRenderMode()</code> +
+        <code>AddAdditionalAssemblies(typeof(Counter).Assembly)</code> onto Nxt's
+        <code>MapRazorComponents&lt;Root&gt;</code>.</li>
+</ul>

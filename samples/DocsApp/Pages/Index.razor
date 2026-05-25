@@ -1,0 +1,53 @@
+<h1>Nxt</h1>
+
+<p>
+    A Next.js-style framework for .NET. File-based routing, layouts, SSR / SSG / ISR,
+    Blazor server + WebAssembly, first-class DI — all wired through Roslyn source generators
+    so it stays close to plain ASP.NET Core.
+</p>
+
+<h2>What's in the box</h2>
+<ul>
+    <li><strong>File-based routing</strong> — files in <code>Pages/</code> become URLs.
+        <code>Pages/Blog/[slug].razor</code> → <code>/blog/&#123;slug&#125;</code>.</li>
+    <li><strong>Layout convention</strong> — <code>_layout.razor</code> in any folder wraps
+        its pages. Layouts nest. <code>@@inherits LayoutComponentBase</code> auto-injected.</li>
+    <li><strong>Cascading <code>[Authorize]</code></strong> — drop the directive on a layout,
+        every page underneath is protected.</li>
+    <li><strong>Colocated APIs</strong> — a class with HTTP-verb methods under an
+        <code>api/</code> folder auto-registers (no attribute needed).</li>
+    <li><strong>Render modes</strong> — SSR by default; <code>@@nxt:static</code>,
+        <code>@@nxt:revalidate=60</code>, <code>@@nxt:interactive-server</code>,
+        <code>@@nxt:interactive-wasm</code> opt in to others.</li>
+    <li><strong>CLI</strong> — <code>nxt new</code>, <code>dev</code>, <code>build</code>,
+        <code>start</code>, <code>publish</code> (static / Docker / tarball),
+        <code>update</code>.</li>
+    <li><strong>Extensibility hooks</strong> — register services, slot middleware, chain
+        Razor-components endpoints, all without forking the framework.</li>
+    <li><strong>Tailwind-ready</strong> — drop in a standalone CLI binary + an MSBuild
+        target. No Node, no <code>tailwind.config.js</code> (Tailwind v4).</li>
+</ul>
+
+<h2>Working samples in the repo</h2>
+<p>Browse <a href="https://github.com/Tyler-Harker/Nxt/tree/master/samples"
+                target="_blank" rel="noreferrer">/samples</a> for end-to-end working apps:</p>
+<ul>
+    <li><strong>SampleApp</strong> — every render mode, layouts, dynamic routes, API endpoints,
+        middleware, all in one demo.</li>
+    <li><strong>IdentityApp</strong> — ASP.NET Core Identity + SQLite + cookies + cascading
+        <code>[Authorize]</code> + a mobile-responsive dashboard.</li>
+    <li><strong>WasmApp</strong> + <strong>WasmApp.Client</strong> — two-project Blazor
+        WebAssembly setup wired via <code>NxtHostOptions.ConfigureRazorEndpoints</code>.</li>
+    <li><strong>TailwindApp</strong> — Tailwind v4 standalone CLI wired via MSBuild target.</li>
+    <li><strong>DocsApp</strong> — this site. Mobile sidebar, active-link highlighting,
+        Tailwind <code>prose</code> styles.</li>
+</ul>
+
+<h2>Where to next</h2>
+<ul>
+    <li><a href="/docs/start">Getting started</a> — install + spin up your first app</li>
+    <li><a href="/docs/routing">Routing &amp; pages</a> — the file conventions</li>
+    <li><a href="/docs/layouts">Layouts</a> — the <code>_layout.razor</code> pattern</li>
+    <li><a href="/docs/rendering">Render modes</a> — SSR, SSG, ISR, interactive</li>
+    <li><a href="/docs/cli">CLI reference</a> — every command + flag</li>
+</ul>

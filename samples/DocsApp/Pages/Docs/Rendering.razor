@@ -1,0 +1,64 @@
+<h1>Render modes</h1>
+
+<p>
+    Every page is server-rendered by default (SSR). Add a magic comment at the top of the
+    file to opt into something else.
+</p>
+
+<h2>Static (SSG)</h2>
+<pre><code>@@* @@nxt:static *@@
+
+&lt;h1&gt;About&lt;/h1&gt;
+&lt;p&gt;Generated once at build time.&lt;/p&gt;</code></pre>
+
+<p>
+    <code>nxt build</code> walks every static-marked route and writes the HTML to
+    <code>wwwroot/_nxt_static/&lt;path&gt;.html</code>. Requests hit the cache directly —
+    no rendering work per request.
+</p>
+
+<h2>Incremental Static Regeneration (ISR)</h2>
+<pre><code>@@* @@nxt:revalidate=30 *@@
+
+&lt;p&gt;Built at: @@DateTime.UtcNow.ToString("O")&lt;/p&gt;</code></pre>
+
+<p>
+    Like static, but every <code>N</code> seconds the page is silently re-rendered in the
+    background. Readers always get cached HTML (fast); the cache stays warm.
+</p>
+
+<h2>Interactive Server (Blazor Server)</h2>
+<pre><code>@@* @@nxt:interactive-server *@@
+
+&lt;button @@onclick="() =&gt; count++"&gt;Clicked @@count times&lt;/button&gt;
+
+@@code &#123; int count; &#125;</code></pre>
+
+<p>
+    The page is SSR'd, then a SignalR connection takes over so <code>@@onclick</code>,
+    state changes, and re-renders happen interactively. Requires <code>UseAntiforgery</code>
+    (Nxt wires it for you).
+</p>
+
+<h2>Interactive WebAssembly</h2>
+<p>
+    The component must live in a sibling project built with
+    <code>Microsoft.NET.Sdk.BlazorWebAssembly</code>, otherwise its DLL isn't shipped to the
+    browser. The server then references that project and chains
+    <code>AddInteractiveWebAssemblyRenderMode()</code>
+    + <code>AddAdditionalAssemblies(typeof(MyClientComponent).Assembly)</code>:
+</p>
+<pre><code>await NxtHost.RunAsync(args, opts =&gt;
+&#123;
+    opts.ConfigureServices = b =&gt;
+        b.Services.AddRazorComponents().AddInteractiveWebAssemblyComponents();
+
+    opts.ConfigureRazorEndpoints = blazor =&gt;
+        blazor.AddInteractiveWebAssemblyRenderMode()
+              .AddAdditionalAssemblies(typeof(MyApp.Client.Counter).Assembly);
+&#125;);</code></pre>
+
+<p>Then in a server page, reference the client component with the render mode:</p>
+<pre><code>&lt;Counter @@rendermode="InteractiveWebAssembly" /&gt;</code></pre>
+
+<p>See <a href="/docs/wasm">Blazor WebAssembly</a> for the full setup.</p>

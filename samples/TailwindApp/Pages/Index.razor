@@ -1,0 +1,55 @@
+<section class="text-center">
+    <h1 class="text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">
+        <span class="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent">
+            Nxt + Tailwind
+        </span>
+    </h1>
+    <p class="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
+        Tailwind v4 wired up with the standalone CLI — no Node, no <code class="rounded bg-slate-200 px-1.5 py-0.5 text-sm">tailwind.config.js</code>.
+        An MSBuild target rebuilds <code class="rounded bg-slate-200 px-1.5 py-0.5 text-sm">wwwroot/site.css</code>
+        before every C# build.
+    </p>
+    <div class="mt-8 flex justify-center gap-3">
+        <a href="/cards"
+           class="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700">
+            See more →
+        </a>
+        <a href="https://github.com/Tyler-Harker/Nxt"
+           class="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+            GitHub
+        </a>
+    </div>
+</section>
+
+<section class="mt-16 grid gap-6 sm:grid-cols-3">
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-2xl">
+            ⚡
+        </div>
+        <h3 class="text-base font-semibold text-slate-900">Zero Node</h3>
+        <p class="mt-1 text-sm text-slate-600">
+            Standalone CLI is a single binary at <code class="text-xs">tools/tailwindcss</code>.
+        </p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-2xl">
+            🧪
+        </div>
+        <h3 class="text-base font-semibold text-slate-900">Hot reload friendly</h3>
+        <p class="mt-1 text-sm text-slate-600">
+            Run <code class="text-xs">./tools/tailwindcss … --watch</code> alongside
+            <code class="text-xs">dotnet watch</code>.
+        </p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-2xl">
+            🎨
+        </div>
+        <h3 class="text-base font-semibold text-slate-900">Custom theme</h3>
+        <p class="mt-1 text-sm text-slate-600">
+            <code class="text-xs">@@theme</code> block in
+            <code class="text-xs">Styles/site.css</code> defines colors like
+            <span class="rounded bg-brand-500 px-1.5 text-white">brand-500</span>.
+        </p>
+    </div>
+</section>

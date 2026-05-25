@@ -1,0 +1,21 @@
+<h1>Nxt + ASP.NET Core Identity</h1>
+<p>
+    This sample wires ASP.NET Core Identity (cookies) into a Nxt app, backed by SQLite.
+    Try <a href="/auth/register">registering</a> an account, then visit
+    <a href="/dashboard/profile">/dashboard/profile</a> — it requires authentication.
+</p>
+
+<h2>How it's wired</h2>
+<ul>
+    <li><code>Program.cs</code> adds <code>AddDbContext&lt;AppDbContext&gt;</code> (SQLite),
+        <code>AddIdentity&lt;IdentityUser, IdentityRole&gt;</code>, and <code>AddAuthorization()</code>.</li>
+    <li><code>Pages/Dashboard/_layout.razor</code> has <code>@@attribute [Authorize]</code>.
+        The Nxt source generator cascades that attribute onto every page that lives under the
+        Dashboard layout (currently just <code>Profile.razor</code>) — so the entire subtree is
+        protected without per-page boilerplate.</li>
+    <li><code>Pages/Login.razor</code> + <code>Pages/Register.razor</code> are plain HTML forms
+        with <code>&lt;AntiforgeryToken /&gt;</code> that POST to API endpoints under
+        <code>Api/Auth/</code> — those call <code>SignInManager</code> and set the auth cookie.</li>
+    <li>Nxt's pipeline now includes <code>UseAuthentication()</code> + <code>UseAuthorization()</code>
+        (added in the runtime, safe no-op when no schemes are registered).</li>
+</ul>

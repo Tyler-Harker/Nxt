@@ -1,0 +1,88 @@
+<h1>Authorization</h1>
+
+<p>
+    Nxt doesn't bundle an auth provider — wire whichever fits (cookies, Identity, OIDC, JWT)
+    in your <code>Program.cs</code> via <code>NxtHostOptions</code>. The framework just
+    needs you to:
+</p>
+
+<ol>
+    <li>Register services (<code>AddAuthentication</code>, <code>AddAuthorization</code>, …)
+        in <code>ConfigureServices</code>.</li>
+    <li>Insert <code>UseAuthentication</code> + <code>UseAuthorization</code> in
+        <code>ConfigureMiddleware</code>.</li>
+</ol>
+
+<h2>ASP.NET Core Identity with cookies + SQLite</h2>
+<pre><code>await NxtHost.RunAsync(args, opts =&gt;
+&#123;
+    opts.ConfigureServices = builder =&gt;
+    &#123;
+        builder.Services.AddDbContext&lt;AppDbContext&gt;(o =&gt;
+            o.UseSqlite("Data Source=app.db"));
+
+        builder.Services
+            .AddIdentity&lt;IdentityUser, IdentityRole&gt;(o =&gt; o.Password.RequiredLength = 6)
+            .AddEntityFrameworkStores&lt;AppDbContext&gt;()
+            .AddDefaultTokenProviders();
+
+        builder.Services.ConfigureApplicationCookie(o =&gt;
+        &#123;
+            o.LoginPath = "/auth/login";
+            o.LogoutPath = "/auth/logout";
+        &#125;);
+
+        builder.Services.AddAuthorization();
+        builder.Services.AddCascadingAuthenticationState();
+    &#125;;
+
+    opts.ConfigureMiddleware = app =&gt;
+    &#123;
+        app.UseAuthentication();
+        app.UseAuthorization();
+    &#125;;
+&#125;);</code></pre>
+
+<h2>Protecting routes</h2>
+<p>Two options.</p>
+
+<h3>Per page</h3>
+<pre><code>@@attribute [Authorize]
+&lt;h1&gt;Profile&lt;/h1&gt;</code></pre>
+
+<h3>Per subtree (cascading)</h3>
+<p>
+    Drop <code>@@attribute [Authorize]</code> on a layout — Nxt's generator copies it onto
+    every page beneath the layout. Add roles or policies the same way:
+</p>
+<pre><code>@@* Pages/Admin/_layout.razor *@@
+@@attribute [Authorize(Roles="admin")]
+
+&lt;aside&gt;...&lt;/aside&gt;
+@@Body</code></pre>
+
+<p>
+    Unauthenticated requests are bounced to whatever you set as
+    <code>options.LoginPath</code>, with <code>?ReturnUrl=…</code> appended.
+</p>
+
+<h2>Sign-in / sign-out endpoints</h2>
+<p>
+    A typical pattern: a Razor form posts to a colocated API endpoint that calls
+    <code>SignInManager</code>. The endpoint files live under
+    <code>Pages/Auth/api/</code> so they're URL-routed to <code>/api/auth/*</code> and sit
+    right next to the forms.
+</p>
+<pre><code>public class Login(SignInManager&lt;IdentityUser&gt; signIn)
+&#123;
+    public async Task&lt;IResult&gt; POST(HttpContext ctx)
+    &#123;
+        var form = await ctx.Request.ReadFormAsync();
+        var result = await signIn.PasswordSignInAsync(
+            form["email"]!, form["password"]!,
+            isPersistent: true, lockoutOnFailure: false);
+        return result.Succeeded
+            ? Results.Redirect("/dashboard")
+            : Results.Redirect("/auth/login?error=invalid");
+    &#125;
+&#125;</code></pre>

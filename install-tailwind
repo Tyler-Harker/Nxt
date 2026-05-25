@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# Download the standalone Tailwind CSS CLI to ./tools/tailwindcss for the current platform.
+# TailwindApp.csproj's MSBuild target looks here when running the CSS build, so all you have
+# to do is run this once after cloning, then `dotnet build samples/TailwindApp` works.
+#
+#     ./install-tailwind            # latest stable
+#     ./install-tailwind v4.3.0     # pin a version
+
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="${1:-latest}"
+
+case "$(uname -sm)" in
+    "Linux x86_64")  ASSET="tailwindcss-linux-x64" ;;
+    "Linux aarch64") ASSET="tailwindcss-linux-arm64" ;;
+    "Darwin x86_64") ASSET="tailwindcss-macos-x64" ;;
+    "Darwin arm64")  ASSET="tailwindcss-macos-arm64" ;;
+    *)               echo "x Unsupported platform: $(uname -sm)" >&2; exit 1 ;;
+esac
+
+if [ "$VERSION" = "latest" ]; then
+    URL="https://github.com/tailwindlabs/tailwindcss/releases/latest/download/$ASSET"
+else
+    URL="https://github.com/tailwindlabs/tailwindcss/releases/download/$VERSION/$ASSET"
+fi
+
+mkdir -p "$REPO_ROOT/tools"
+DEST="$REPO_ROOT/tools/tailwindcss"
+
+echo "-> Downloading $URL"
+curl -sLfo "$DEST" "$URL"
+chmod +x "$DEST"
+
+echo "Installed: $("$DEST" --help 2>&1 | head -1)"
+echo "  Path: $DEST"

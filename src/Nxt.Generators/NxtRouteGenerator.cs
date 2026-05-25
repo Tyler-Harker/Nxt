@@ -47,7 +47,7 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
                 && string.Equals(Path.GetFileName(f.Path), "_layout.razor", StringComparison.OrdinalIgnoreCase)
                 && IsUnder(f.Path, "Pages"))
             .Combine(projectDir)
-            .Select((pair, _) => DescribeLayout(pair.Left, pair.Right))
+            .Select((pair, ct) => DescribeLayout(pair.Left, pair.Right, ct))
             .Where(l => l is not null);
 
         // Discover three kinds of classes:
@@ -91,7 +91,7 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
 
             foreach (var page in resolvedPages.Where(p => p.Kind == "Blazor"))
             {
-                var partial = EmitBlazorPagePartial(page, rootNs);
+                var partial = EmitBlazorPagePartial(page, rootNs, layouts);
                 if (partial is null) continue;
                 var hint = SanitizeHintName(page.FilePath);
                 spc.AddSource($"NxtPage.{hint}.g.cs", SourceText.From(partial, Encoding.UTF8));
@@ -176,14 +176,31 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
     private static string NormalizeDir(string p) =>
         p.Replace('\\', '/').TrimEnd('/') + "/";
 
-    private static LayoutDescriptor? DescribeLayout(AdditionalText file, string projectDir)
+    private static LayoutDescriptor? DescribeLayout(AdditionalText file, string projectDir, System.Threading.CancellationToken ct)
     {
         var relative = MakeRelative(file.Path, projectDir).Replace('\\', '/');
         if (relative.IndexOf("Pages/", StringComparison.OrdinalIgnoreCase) < 0) return null;
-        return new LayoutDescriptor(relative);
+        var text = file.GetText(ct)?.ToString() ?? "";
+        var authorize = ParseAuthorizeDirectives(text);
+        return new LayoutDescriptor(relative, authorize);
     }
 
-    private sealed record LayoutDescriptor(string FilePath);
+    /// <summary>
+    /// Returns the bodies of any <c>@attribute [Authorize…]</c> lines in the layout source.
+    /// The captured string is the bare attribute (e.g. <c>Authorize</c> or
+    /// <c>Authorize(Roles="admin")</c>) — the caller fully-qualifies it on emit.
+    /// </summary>
+    private static List<string> ParseAuthorizeDirectives(string source)
+    {
+        var result = new List<string>();
+        foreach (Match m in Regex.Matches(source, @"^\s*@attribute\s+\[(Authorize[^\]]*)\]", RegexOptions.Multiline))
+        {
+            result.Add(m.Groups[1].Value);
+        }
+        return result;
+    }
+
+    private sealed record LayoutDescriptor(string FilePath, List<string> AuthorizeDirectives);
 
     private static string SanitizeHintName(string filePath)
     {
@@ -418,7 +435,7 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
     /// The partial matches the class the Razor SDK generates for the .razor file:
     ///   <c>Pages/Blog/[slug].razor</c> → namespace <c>{RootNS}.Pages.Blog</c>, class <c>_slug_</c>
     /// </summary>
-    private static string? EmitBlazorPagePartial(PageDescriptor page, string rootNs)
+    private static string? EmitBlazorPagePartial(PageDescriptor page, string rootNs, List<LayoutDescriptor> layouts)
     {
         if (string.IsNullOrEmpty(rootNs)) return null;
         var (ns, cls) = DerivePagesNamespaceAndClass(page.FilePath, rootNs);
@@ -432,6 +449,14 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
         sb.AppendLine($"[global::Microsoft.AspNetCore.Components.RouteAttribute(\"{Escape(page.UrlPattern)}\")]");
         if (page.LayoutTypeName is not null)
             sb.AppendLine($"[global::Microsoft.AspNetCore.Components.LayoutAttribute(typeof(global::{page.LayoutTypeName}))]");
+
+        // Cascade @attribute [Authorize…] from every ancestor _layout.razor onto the page.
+        // Blazor only enforces [Authorize] on the routable PAGE component (not on layouts),
+        // so we propagate the directive at codegen time. Outer-most layout's directives apply
+        // first; inner can add more.
+        foreach (var directive in CollectAuthorizeForPage(page, layouts))
+            sb.AppendLine($"[global::Microsoft.AspNetCore.Authorization.{directive}]");
+
         var renderModeAttr = page.RenderMode switch
         {
             "InteractiveServer" => "global::Nxt.InteractiveServerAttribute",
@@ -442,6 +467,24 @@ public sealed class NxtRouteGenerator : IIncrementalGenerator
             sb.AppendLine($"[{renderModeAttr}]");
         sb.AppendLine($"public partial class {cls} {{ }}");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Walks every <c>_layout.razor</c> whose directory is an ancestor of the page (or the
+    /// page's own directory) and returns the union of their <c>[Authorize…]</c> directives,
+    /// outer-most first.
+    /// </summary>
+    private static List<string> CollectAuthorizeForPage(PageDescriptor page, List<LayoutDescriptor> layouts)
+    {
+        var pageDir = NormalizeDir(Path.GetDirectoryName(page.FilePath) ?? string.Empty);
+        var result = new List<string>();
+        foreach (var layout in layouts.OrderBy(l => (Path.GetDirectoryName(l.FilePath) ?? string.Empty).Length))
+        {
+            var ldir = NormalizeDir(Path.GetDirectoryName(layout.FilePath) ?? string.Empty);
+            if (pageDir.StartsWith(ldir, StringComparison.OrdinalIgnoreCase))
+                result.AddRange(layout.AuthorizeDirectives);
+        }
+        return result;
     }
 
     /// <summary>Mirrors the Razor SDK's file-to-type naming so the partial matches.</summary>

@@ -1,0 +1,91 @@
+<h1>Tailwind</h1>
+
+<p>
+    Nxt apps can use Tailwind v4 with zero Node. The pattern: drop the standalone Tailwind
+    CLI binary in <code>tools/</code>, point an MSBuild target at it, link the compiled CSS
+    from your layout. Done.
+</p>
+
+<h2>1. Install the standalone CLI</h2>
+<p>
+    The repo ships <code>./install-tailwind</code> — a one-shot bash script that downloads
+    the right binary for your platform (Linux x64/arm64, macOS x64/arm64) to
+    <code>./tools/tailwindcss</code>:
+</p>
+
+<pre><code>./install-tailwind                # latest v4
+./install-tailwind v4.3.0         # pin a specific version</code></pre>
+
+<p>The binary is gitignored — each developer runs the script once after cloning.</p>
+
+<h2>2. Source CSS</h2>
+<p>
+    Tailwind v4 is CSS-first — no <code>tailwind.config.js</code>. Define
+    <code>@@source</code> roots and a <code>@@theme</code> block in a single CSS file:
+</p>
+
+<pre><code>/* Styles/site.css */
+@@import "tailwindcss";
+
+@@source "../Pages/**/*.razor";
+@@source "../Pages/**/*.cshtml";
+
+@@theme &#123;
+    --color-brand-50:  #eff6ff;
+    --color-brand-500: #3b82f6;
+    --color-brand-600: #2563eb;
+    --color-brand-700: #1d4ed8;
+&#125;</code></pre>
+
+<h2>3. MSBuild target</h2>
+<p>
+    Drop this into your csproj. It runs the CLI before every C# compile, so
+    <code>wwwroot/site.css</code> is always fresh and gets shipped via
+    <code>MapStaticAssets</code>. If the binary isn't installed, you get a warning instead
+    of a failure (existing CSS still serves):
+</p>
+
+<pre><code>&lt;PropertyGroup&gt;
+  &lt;TailwindCli Condition="'$(TailwindCli)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\tools\tailwindcss')"&gt;$(MSBuildThisFileDirectory)..\..\tools\tailwindcss&lt;/TailwindCli&gt;
+  &lt;TailwindCli Condition="'$(TailwindCli)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe')"&gt;$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe&lt;/TailwindCli&gt;
+&lt;/PropertyGroup&gt;
+
+&lt;Target Name="BuildTailwind"
+        BeforeTargets="BeforeBuild"
+        Inputs="Styles/site.css;Pages/**/*.razor"
+        Outputs="wwwroot/site.css"&gt;
+  &lt;Warning Text="Tailwind CLI not found. Run ./install-tailwind from repo root."
+           Condition="'$(TailwindCli)' == ''" /&gt;
+  &lt;Exec Command='"$(TailwindCli)" --input Styles/site.css --output wwwroot/site.css --minify'
+        Condition="'$(TailwindCli)' != ''"
+        WorkingDirectory="$(MSBuildThisFileDirectory)" /&gt;
+&lt;/Target&gt;</code></pre>
+
+<h2>4. Link from your layout</h2>
+<pre><code>&lt;link rel="stylesheet" href="/site.css" /&gt;</code></pre>
+
+<p>
+    Tailwind tree-shakes — only the utilities you actually reference in a
+    <code>.razor</code> end up in the output. A typical small app's
+    <code>wwwroot/site.css</code> is 15–25&#160;KB minified.
+</p>
+
+<h2>Hot reload during dev</h2>
+<p>
+    In one terminal, run the CLI in watch mode; in another, <code>dotnet watch</code> or
+    <code>./dev-sample</code>:
+</p>
+
+<pre><code>./tools/tailwindcss \
+    -i samples/MyApp/Styles/site.css \
+    -o samples/MyApp/wwwroot/site.css \
+    --watch</code></pre>
+
+<h2>Reference</h2>
+<p>
+    See <a href="https://github.com/Tyler-Harker/Nxt/tree/master/samples/TailwindApp"
+            target="_blank" rel="noreferrer">samples/TailwindApp</a> for a complete working
+    setup, and <a href="https://github.com/Tyler-Harker/Nxt/tree/master/samples/DocsApp"
+            target="_blank" rel="noreferrer">samples/DocsApp</a> (this site) for the prose +
+    sidebar pattern used here.
+</p>
