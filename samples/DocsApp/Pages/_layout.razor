@@ -1,26 +1,72 @@
 @inherits global::Microsoft.AspNetCore.Components.LayoutComponentBase
 @inject NavigationManager Nav
 
+@*
+    Theme detection runs BEFORE the body paints to prevent a flash of the wrong theme.
+    Priority order:
+      1. explicit user choice in localStorage (set by the toggle button)
+      2. OS preference via prefers-color-scheme: light  (anything else → dark)
+      3. fallback: dark
+    `nxtToggleTheme` is the click handler the header button calls.
+*@
+<HeadContent>
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var dark = saved === 'dark' ||
+                    (saved == null &&
+                     !(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches));
+                if (dark) document.documentElement.classList.add('dark');
+            } catch (e) { /* private mode etc. — fall back to default (light) */ }
+        })();
+        function nxtToggleTheme() {
+            var isDark = document.documentElement.classList.toggle('dark');
+            try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) { }
+        }
+    </script>
+</HeadContent>
+
 <link rel="stylesheet" href="/site.css" />
 <title>Nxt Docs</title>
 
 <input type="checkbox" id="dnav" class="peer/dnav hidden" />
 
-<div class="min-h-screen bg-slate-50 text-slate-900">
-    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+<div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-200">
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur
+                   dark:border-slate-800 dark:bg-slate-950/80">
         <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
             <label for="dnav"
-                   class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 lg:hidden"
+                   class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-slate-700 hover:bg-slate-100
+                          dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
                    aria-label="Toggle navigation">☰</label>
-            <a href="/" class="flex items-center gap-2 font-semibold text-slate-900">
+            <a href="/" class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
                 <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-brand-500 to-brand-700 text-sm text-white">N</span>
                 <span>Nxt Docs</span>
             </a>
-            <nav class="ml-auto hidden gap-5 text-sm text-slate-600 sm:flex"> 
-                <a href="/docs/start" class="hover:text-brand-600">Get started</a>
-                <a href="https://github.com/Tyler-Harker/Nxt" class="hover:text-brand-600"
-                   target="_blank" rel="noreferrer">GitHub ↗</a>
-            </nav>
+            <div class="ml-auto flex items-center gap-3">
+                <nav class="hidden gap-5 text-sm text-slate-600 dark:text-slate-400 sm:flex">
+                    <a href="/docs/start" class="hover:text-brand-600 dark:hover:text-brand-500">Get started</a>
+                    <a href="https://github.com/Tyler-Harker/Nxt" class="hover:text-brand-600 dark:hover:text-brand-500"
+                       target="_blank" rel="noreferrer">GitHub ↗</a>
+                </nav>
+                @* Both icons are present; CSS hides one based on .dark — sun shows in dark mode
+                   (click to go light), moon shows in light mode (click to go dark). *@
+                <button type="button" onclick="nxtToggleTheme()"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100
+                               dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Toggle color theme">
+                    <svg class="hidden h-5 w-5 dark:block" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                    </svg>
+                    <svg class="h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -28,7 +74,9 @@
         <!-- Sidebar — fixed off-canvas on mobile; permanent on lg -->
         <aside class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full overflow-y-auto border-r border-slate-200 bg-white px-4 pb-10 pt-20
                       transition-transform peer-checked/dnav:translate-x-0
-                      lg:sticky lg:top-20 lg:z-auto lg:h-[calc(100vh-5rem)] lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:pt-0">
+                      dark:border-slate-800 dark:bg-slate-900
+                      lg:sticky lg:top-20 lg:z-auto lg:h-[calc(100vh-5rem)] lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:pt-0
+                      dark:lg:bg-transparent">
             <NavSection Title="Introduction">
                 <SideLink Href="/"             Label="Overview" />
                 <SideLink Href="/docs/start"   Label="Getting started" />
