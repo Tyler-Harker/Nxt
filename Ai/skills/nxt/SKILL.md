@@ -13,6 +13,23 @@ Nxt is a thin convention layer over ASP.NET Core 10 + Blazor Web App. Pages are 
 - The user runs `nxt` commands (`nxt dev`, `nxt build`, `nxt publish`, etc).
 - The user is editing Razor pages, layouts, or API endpoints under a `Pages/` folder.
 
+## Reference
+
+This skill covers the common cases. When you need detail it doesn't cover, the canonical sources are:
+
+- **Source + samples**: <https://github.com/Tyler-Harker/Nxt>
+  - `samples/SampleApp/` — every feature in one app
+  - `samples/IdentityApp/` — ASP.NET Core Identity + SQLite + `NxtHostOptions`
+  - `samples/WasmApp/` + `samples/WasmApp.Client/` — two-project Blazor WASM
+  - `samples/TailwindApp/` — Tailwind v4 standalone CLI
+  - `samples/DocsApp/` — the docs site itself (Tailwind, dark mode, mobile sidebar)
+  - `src/Nxt.Runtime/` — `NxtHost.RunAsync`, `NxtHostOptions`, the rendering pipeline
+  - `src/Nxt.Generators/` — the Roslyn generator (read this if a convention behaves unexpectedly)
+- **Rendered docs**: <https://tyler-harker.github.io/Nxt/>
+- **Issues / changelog**: <https://github.com/Tyler-Harker/Nxt/issues> and the commit history on `master`
+
+If something feels under-documented here, prefer reading an actual sample over guessing — the samples are kept working in CI and reflect current conventions.
+
 ## Project shape
 
 ```
