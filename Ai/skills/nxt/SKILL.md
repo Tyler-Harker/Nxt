@@ -224,6 +224,87 @@ For `dark:` variants, add `@custom-variant dark (&:where(.dark, .dark *));` to `
 - **A REST API for an existing Razor app**: drop a `.cs` class with `GET`/`POST` methods into any folder named `api`; no manual `MapGet` calls needed.
 - **Custom middleware**: a class with `[Middleware(order: N)]` — no manual `app.UseMiddleware<…>()`.
 
+## Adversarial review before "done"
+
+For any non-trivial change, run four parallel review agents BEFORE telling the user the work is complete. Each agent is briefed for one critique angle and reads the code fresh. Synthesize their findings, fix concrete issues, then report.
+
+**Trigger when ANY of:**
+- A new page + endpoint + service combo (a full vertical slice)
+- Any change touching authentication, authorization, sessions, cookies, or user data
+- A new or modified `api/` handler
+- A new or modified middleware class
+- Migrations, schema changes, or anything persisting user input
+- More than ~30 net lines of new logic
+
+**Skip for:** typo fixes, single-line edits, comment-only changes, formatting, dependency bumps, doc-only edits, renaming a variable.
+
+**How to launch:** send ONE message with FOUR `Agent` tool calls (parallel). Use `subagent_type: "general-purpose"` for each. Each prompt must be self-contained — the agents don't see your conversation. Tell each one the exact files/paths to read, cap the response (200 words max), and ask for concrete findings, not theoretical risks.
+
+### Agent 1 — Decomposition & reuse
+
+```
+Review <file paths> for component/method decomposition. Specifically:
+- Razor pages: is logic that exceeds ~5 lines moved to a .razor.cs partial?
+- Are multi-use chunks extracted into Components/ or a shared service?
+- Are abstractions appropriate (not over-engineered, not under-engineered)?
+- Is there copy-paste that should be a method/component?
+- Component boundaries: props minimal, no shared mutable state?
+Return a punch list of concrete refactors with file:line refs.
+Skip nitpicks. Under 200 words.
+```
+
+### Agent 2 — Bug hunter
+
+```
+Review <file paths> for bugs you'd bet money on, not theoretical risks:
+- Null/undefined access (especially [Parameter] / [Inject] before OnInitialized)
+- Razor lifecycle errors (StateHasChanged misuse, OnInitialized vs OnAfterRender)
+- Un-awaited tasks, fire-and-forget Task.Run, missing ConfigureAwait edge cases
+- Off-by-one, integer overflow, decimal vs double for money
+- HTTP status codes that don't match semantics (200 on error, 404 vs 400)
+- Race conditions in singleton services
+- DI lifetime mistakes (scoped injected into singleton)
+- Disposed contexts (DbContext used after request ends)
+Return concrete bugs with file:line and a one-line repro. Under 200 words.
+```
+
+### Agent 3 — Security reviewer
+
+```
+Review <file paths> for security vulnerabilities — concrete, not theoretical:
+- Missing [Authorize] where data is user-scoped (check layout cascade too)
+- Authorization bypass: does an endpoint trust client-supplied user/tenant ID?
+- SQL injection (raw SQL with string concat)
+- XSS (Razor's @ auto-encodes, but @Html.Raw / MarkupString does NOT)
+- CSRF on POST endpoints (antiforgery on by default — check it's not disabled)
+- Open redirect (any Redirect() taking user input)
+- SSRF (HttpClient with a user-supplied URL)
+- Mass assignment (binding directly to entity types with sensitive fields)
+- Trust-boundary input validation gaps (route/query/body params used unchecked)
+Return concrete vulnerabilities with file:line and an exploit sketch. Under 200 words.
+```
+
+### Agent 4 — Sensitive data exposure
+
+```
+Review <file paths> for accidental exposure of sensitive data:
+- Passwords/hashes/tokens/API keys logged via Console.WriteLine, ILogger, or returned in responses
+- Stack traces or exception messages leaked to the client (UseDeveloperExceptionPage in prod)
+- PII (email, phone, address, full name, internal IDs) in API responses where the caller doesn't need it
+- Secrets hardcoded in source instead of configuration/user-secrets
+- Sensitive data in URL query strings (logged by proxies, kept in browser history)
+- Connection strings / API keys committed to source
+- User-uploaded files served from a path that allows traversal
+Return concrete leaks with file:line. Under 200 words.
+```
+
+### Synthesizing the findings
+
+1. Read all four reports.
+2. **Fix everything any reviewer flagged that's concrete and obviously correct** — don't argue with reviewers on basics.
+3. For findings that disagree or feel speculative, judge yourself; cite your reasoning in the user-facing summary.
+4. Before declaring "done," tell the user: "Ran adversarial review (4 agents). Found N issues across <categories>; fixed them in <files>." If nothing was found, say so — silence reads as "didn't run it."
+
 ## Things NOT to do
 
 - Don't put `@page` directives on files under `Pages/` — the generator emits them; manual ones collide.
