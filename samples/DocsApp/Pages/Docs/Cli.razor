@@ -77,6 +77,31 @@ nxt publish --image myapp:v1 --push registry.fly.io/myapp:v1
 # Tarball for scp
 nxt publish --bundle ./dist/myapp.tar.gz</code></pre>
 
+<h2><code>nxt skill</code></h2>
+<p>
+    Installs a Claude skill — a markdown file with YAML frontmatter that teaches an
+    AI assistant how to use Nxt — into your project's
+    <code>.claude/skills/</code> folder (or globally to
+    <code>~/.claude/skills/</code>). The bundled skills live in
+    <code>/Ai/skills/</code> in this repo.
+</p>
+<pre><code># list what's available
+nxt skill list
+
+# install the "nxt" skill into the current project
+nxt skill add nxt
+
+# install globally so it's available to every project on this machine
+nxt skill add nxt --global</code></pre>
+<table>
+    <thead><tr><th>Flag</th><th>What</th></tr></thead>
+    <tbody>
+        <tr><td><code>--global</code> / <code>-g</code></td><td>Install to <code>~/.claude/skills/</code> instead of <code>./.claude/skills/</code>.</td></tr>
+        <tr><td><code>--force</code> / <code>-f</code></td><td>Overwrite the destination if it already exists.</td></tr>
+        <tr><td><code>--output &lt;path&gt;</code></td><td>Custom destination directory.</td></tr>
+    </tbody>
+</table>
+
 <h2><code>nxt update</code></h2>
 <p>
     Downloads the latest source from GitHub, re-packs Runtime/CLI/Templates, clears NuGet
